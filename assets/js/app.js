@@ -76,9 +76,12 @@
   }
 
   // ----- router ------------------------------------------------
+  // Only `#/...` hashes are SPA routes. Any other hash (e.g. `#chapters`) is
+  // treated as an in-page anchor — we render home and scroll to the element.
   function parseRoute() {
-    const hash = location.hash || "#/";
-    const clean = hash.replace(/^#\/?/, "");
+    const hash = location.hash || "";
+    if (!hash.startsWith("#/")) return { name: "home", anchor: hash ? hash.slice(1) : null };
+    const clean = hash.replace(/^#\//, "");
     const parts = clean.split("/").filter(Boolean);
     if (parts.length === 0) return { name: "home" };
     if (parts[0] === "chapter" && parts[1]) return { name: "chapter", chapterId: parts[1] };
@@ -91,7 +94,15 @@
     app.innerHTML = "";
     window.scrollTo({ top: 0, behavior: "instant" });
     renderNav();
-    if (route.name === "home") return renderHome();
+    if (route.name === "home") {
+      renderHome();
+      // Scroll to an in-page anchor if one was given (e.g. #chapters)
+      if (route.anchor) {
+        const el = document.getElementById(route.anchor);
+        if (el) requestAnimationFrame(() => el.scrollIntoView({ behavior: "smooth", block: "start" }));
+      }
+      return;
+    }
     if (route.name === "chapter") return renderChapter(route.chapterId);
     if (route.name === "example") return renderExample(route.chapterId, route.slug);
     return renderNotFound();
