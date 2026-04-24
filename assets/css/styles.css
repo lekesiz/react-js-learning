@@ -186,6 +186,163 @@ pre[class*="language-"] {
   border-color: rgb(6 164 239);
 }
 
+/* Progress bar --------------------------------------------------- */
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: rgb(226 232 240);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.progress-bar.sm { height: 5px; }
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, rgb(16 185 129), rgb(5 150 105));
+  border-radius: 999px;
+  transition: width 240ms ease;
+}
+.dark .progress-bar { background: rgb(30 41 59); }
+
+/* Mark complete button ------------------------------------------ */
+.mark-complete {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgb(226 232 240);
+  background: #fff;
+  color: rgb(71 85 105);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 120ms ease;
+  white-space: nowrap;
+}
+.mark-complete:hover { background: rgb(241 245 249); }
+.mark-complete.done {
+  background: rgb(16 185 129 / 0.12);
+  color: rgb(6 95 70);
+  border-color: rgb(16 185 129 / 0.3);
+}
+.dark .mark-complete {
+  background: rgb(15 23 42);
+  border-color: rgb(30 41 59);
+  color: rgb(203 213 225);
+}
+.dark .mark-complete:hover { background: rgb(30 41 59); }
+.dark .mark-complete.done {
+  background: rgb(16 185 129 / 0.15);
+  color: rgb(134 239 172);
+  border-color: rgb(16 185 129 / 0.4);
+}
+
+/* Completed card (chapter list) ---------------------------------- */
+.card.is-complete {
+  border-color: rgb(16 185 129 / 0.35);
+  background: rgb(16 185 129 / 0.03);
+}
+.dark .card.is-complete {
+  border-color: rgb(16 185 129 / 0.3);
+  background: rgb(16 185 129 / 0.05);
+}
+
+/* Example viewer layout (sidebar + main) ------------------------ */
+.viewer-layout {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 2rem;
+}
+@media (max-width: 900px) {
+  .viewer-layout { grid-template-columns: minmax(0, 1fr); }
+  .viewer-sidebar { position: static !important; max-height: none !important; }
+}
+
+.viewer-sidebar {
+  position: sticky;
+  top: 80px;
+  align-self: start;
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+  border-right: 1px solid rgb(226 232 240);
+  padding-right: 1rem;
+  font-size: 0.85rem;
+}
+.dark .viewer-sidebar { border-right-color: rgb(30 41 59); }
+.viewer-sidebar-header {
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid rgb(226 232 240);
+}
+.dark .viewer-sidebar-header { border-bottom-color: rgb(30 41 59); }
+
+.viewer-sidebar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.viewer-sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: 0.4rem;
+  color: rgb(71 85 105);
+  text-decoration: none;
+  transition: background 120ms ease, color 120ms ease;
+}
+.viewer-sidebar-item:hover {
+  background: rgb(241 245 249);
+  color: rgb(15 23 42);
+}
+.viewer-sidebar-item.active {
+  background: rgb(6 164 239 / 0.1);
+  color: rgb(6 132 204);
+  font-weight: 600;
+}
+.viewer-sidebar-item.complete .viewer-sidebar-title { color: rgb(100 116 139); }
+.viewer-sidebar-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  background: rgb(241 245 249);
+  color: rgb(100 116 139);
+  font-size: 10px;
+  font-weight: 600;
+  flex-shrink: 0;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+}
+.viewer-sidebar-item.active .viewer-sidebar-num {
+  background: rgb(6 164 239);
+  color: #fff;
+}
+.viewer-sidebar-item.complete .viewer-sidebar-num {
+  background: transparent;
+}
+.viewer-sidebar-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dark .viewer-sidebar-item { color: rgb(148 163 184); }
+.dark .viewer-sidebar-item:hover {
+  background: rgb(30 41 59);
+  color: rgb(226 232 240);
+}
+.dark .viewer-sidebar-item.active {
+  background: rgb(6 164 239 / 0.15);
+  color: rgb(125 211 252);
+}
+.dark .viewer-sidebar-num {
+  background: rgb(30 41 59);
+  color: rgb(148 163 184);
+}
+
 /* Command palette (Cmd+K) --------------------------------------- */
 .palette-overlay {
   position: fixed;

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Drag and drop — reorderable list</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; max-width: 520px; background: #fff; }
+        .item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 14px; border: 1px solid #e5e7eb; border-radius: 8px;
+            margin-top: 6px; background: #fff; cursor: grab; user-select: none;
+            transition: transform 140ms ease, box-shadow 140ms ease, opacity 140ms ease;
+        }
+        .item.dragging { opacity: 0.4; cursor: grabbing; }
+        .item.over { border-color: #0369a1; box-shadow: 0 0 0 2px rgba(6,164,239,.25); }
+        .handle { font-size: 18px; color: #94a3b8; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// Native HTML5 drag-and-drop — no library. Works for reorderable lists,
+// kanban columns, etc. For complex cases with touch support reach for
+// `@dnd-kit` or `react-beautiful-dnd`, but the primitives are surprisingly
+// usable for simple reordering.
+
+const { useState } = React;
+
+const INITIAL = [
+    { id: "a", text: "Design the hero"     },
+    { id: "b", text: "Wire the form"       },
+    { id: "c", text: "Write tests"         },
+    { id: "d", text: "Deploy to staging"   },
+    { id: "e", text: "Ship it"             },
+];
+
+function App() {
+    const [items, setItems] = useState(INITIAL);
+    const [draggingId, setDraggingId] = useState(null);
+    const [overId,    setOverId]      = useState(null);
+
+    const onDragStart = (e, id) => {
+        setDraggingId(id);
+        e.dataTransfer.effectAllowed = "move";
+        // some browsers need setData for the drag to actually start
+        e.dataTransfer.setData("text/plain", id);
+    };
+    const onDragOver = (e, id) => {
+        e.preventDefault(); // required to make it a valid drop target
+        setOverId(id);
+    };
+    const onDrop = (e, targetId) => {
+        e.preventDefault();
+        if (!draggingId || draggingId === targetId) return;
+        setItems((list) => {
+            const next = [...list];
+            const from = next.findIndex((x) => x.id === draggingId);
+            const to   = next.findIndex((x) => x.id === targetId);
+            const [moved] = next.splice(from, 1);
+            next.splice(to, 0, moved);
+            return next;
+        });
+        setDraggingId(null);
+        setOverId(null);
+    };
+    const onDragEnd = () => { setDraggingId(null); setOverId(null); };
+
+    return (
+        <div className="card">
+            <h1>Drag to reorder</h1>
+
+            {items.map((it) => (
+                <div key={it.id}
+                     draggable
+                     onDragStart={(e) => onDragStart(e, it.id)}
+                     onDragOver={(e)  => onDragOver(e, it.id)}
+                     onDrop={(e)      => onDrop(e, it.id)}
+                     onDragEnd={onDragEnd}
+                     className={"item"
+                         + (draggingId === it.id ? " dragging" : "")
+                         + (overId === it.id && draggingId !== it.id ? " over" : "")}>
+                    <span className="handle">⠿</span>
+                    <span>{it.text}</span>
+                </div>
+            ))}
+
+            <p className="muted">
+                Grab a row (the cursor becomes ✊) and drop it between others.
+                Because this is native HTML5 DnD, accessibility + touch devices
+                need extra work — that's why libraries exist.
+            </p>
+        </div>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

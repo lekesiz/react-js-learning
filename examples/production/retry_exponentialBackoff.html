@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Retry with exponential backoff</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; max-width: 560px; background: #fff; }
+        button { padding: 8px 14px; border: 1px solid #0369a1; background: #0369a1; color: #fff; border-radius: 6px; cursor: pointer; font: inherit; font-weight: 600; margin-right: 6px; }
+        button:disabled { background: #94a3b8; border-color: #94a3b8; cursor: not-allowed; }
+        .log { padding: 10px 12px; background: #0f172a; color: #a5f3fc; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; border-radius: 8px; margin-top: 10px; max-height: 220px; overflow-y: auto; }
+        .log div { padding: 2px 0; }
+        .log .ok { color: #86efac; }
+        .log .err { color: #fca5a5; }
+        .log .info { color: #93c5fd; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// Exponential backoff: on each retry, double the wait. Prevents hammering
+// a struggling server. Cap at some max so a flaky endpoint doesn't keep
+// blocking your UI forever.
+
+const { useState, useRef } = React;
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// Fake service: fails the first `failTimes` calls, then succeeds.
+function makeFlakyCall(failTimes = 3) {
+    let n = 0;
+    return async () => {
+        n++;
+        await sleep(120);
+        if (n <= failTimes) throw new Error("503 Service Unavailable");
+        return { at: new Date().toLocaleTimeString(), attempt: n };
+    };
+}
+
+async function withRetry(fn, { retries = 5, baseMs = 300, maxMs = 5000, onAttempt }) {
+    let delay = baseMs;
+    for (let attempt = 1; attempt <= retries; attempt++) {
+        try {
+            onAttempt?.({ attempt, status: "try" });
+            const r = await fn();
+            onAttempt?.({ attempt, status: "ok" });
+            return r;
+        } catch (e) {
+            onAttempt?.({ attempt, status: "fail", message: e.message });
+            if (attempt === retries) throw e;
+            const wait = Math.min(maxMs, delay + Math.random() * 100); // full jitter slice
+            onAttempt?.({ attempt, status: "wait", ms: Math.round(wait) });
+            await sleep(wait);
+            delay *= 2;
+        }
+    }
+}
+
+function App() {
+    const [log, setLog] = useState([]);
+    const [busy, setBusy] = useState(false);
+    const [result, setResult] = useState(null);
+    const callRef = useRef(null);
+
+    async function run() {
+        setLog([]);
+        setResult(null);
+        setBusy(true);
+        callRef.current = makeFlakyCall(3);
+        try {
+            const r = await withRetry(callRef.current, {
+                retries: 6,
+                baseMs: 300,
+                maxMs: 5000,
+                onAttempt: (e) => {
+                    setLog((l) => [...l, e]);
+                },
+            });
+            setResult(r);
+        } catch (e) {
+            setLog((l) => [...l, { attempt: "final", status: "giveup", message: e.message }]);
+        } finally {
+            setBusy(false);
+        }
+    }
+
+    return (
+        <div className="card">
+            <h1>Retry with exponential backoff + jitter</h1>
+
+            <button onClick={run} disabled={busy}>{busy ? "Running…" : "Run flaky call"}</button>
+            <span style={{ color: "#64748b", fontSize: 13, marginLeft: 10 }}>
+                {result ? `Succeeded on attempt ${result.attempt} at ${result.at}` : "(click to start)"}
+            </span>
+
+            <div className="log">
+                {log.length === 0 && <div>// log will appear here</div>}
+                {log.map((e, i) => {
+                    if (e.status === "try")    return <div key={i} className="info">attempt #{e.attempt} — calling service…</div>;
+                    if (e.status === "fail")   return <div key={i} className="err">attempt #{e.attempt} — failed: {e.message}</div>;
+                    if (e.status === "wait")   return <div key={i} className="info">backing off {e.ms} ms…</div>;
+                    if (e.status === "ok")     return <div key={i} className="ok">attempt #{e.attempt} — success ✔</div>;
+                    if (e.status === "giveup") return <div key={i} className="err">gave up: {e.message}</div>;
+                    return null;
+                })}
+            </div>
+
+            <p className="muted">
+                The fake service fails 3 times then succeeds. Wait time doubles each
+                attempt (300 → 600 → 1200 ms) with a tiny jitter — jitter matters
+                when lots of clients all retry at once and would otherwise hit the
+                server in lock-step.
+            </p>
+        </div>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

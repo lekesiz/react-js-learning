@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mount / unmount animations</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; max-width: 520px; background: #fff; }
+        button { padding: 8px 14px; border: 1px solid #0369a1; background: #0369a1; color: #fff; border-radius: 6px; cursor: pointer; font: inherit; font-weight: 600; margin-bottom: 10px; }
+        .panel {
+            padding: 16px; border-radius: 8px; background: #eff6ff; color: #1e40af;
+            transition: opacity 220ms ease, transform 220ms ease;
+        }
+        .panel.enter  { opacity: 0; transform: translateY(8px); }
+        .panel.entered{ opacity: 1; transform: translateY(0); }
+        .panel.exit   { opacity: 1; transform: translateY(0); }
+        .panel.exited { opacity: 0; transform: translateY(-8px); }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// Problem: React unmounts a component instantly; there's no "exit" frame.
+// Trick: two-phase show/hide. Keep the component in the tree with an
+// `exited` class while the transition plays, then actually unmount.
+
+const { useState, useEffect } = React;
+
+function useAnimatedToggle(isOpen, ms = 220) {
+    // phase: "closed" | "enter" | "entered" | "exit" | "exited"
+    const [phase, setPhase] = useState(isOpen ? "entered" : "closed");
+
+    useEffect(() => {
+        if (isOpen) {
+            setPhase("enter");
+            // give the browser one frame to flush "enter" styles, then switch
+            const r = requestAnimationFrame(() => setPhase("entered"));
+            return () => cancelAnimationFrame(r);
+        } else {
+            setPhase("exit");
+            const t = setTimeout(() => setPhase("exited"), 10);
+            const t2 = setTimeout(() => setPhase("closed"), ms);
+            return () => { clearTimeout(t); clearTimeout(t2); };
+        }
+    }, [isOpen, ms]);
+
+    const mounted = phase !== "closed";
+    return { mounted, phase };
+}
+
+function App() {
+    const [open, setOpen] = useState(false);
+    const { mounted, phase } = useAnimatedToggle(open);
+
+    return (
+        <div className="card">
+            <h1>Mount / unmount with enter + exit transitions</h1>
+            <button onClick={() => setOpen((o) => !o)}>
+                {open ? "Hide panel" : "Show panel"}
+            </button>
+
+            {mounted && (
+                <div className={"panel " + phase}>
+                    <strong>Hello!</strong>
+                    <p style={{ margin: "4px 0 0", fontSize: 13 }}>
+                        I fade + slide in, and back out before unmounting. Phase: <code>{phase}</code>.
+                    </p>
+                </div>
+            )}
+
+            <p className="muted">
+                The component stays mounted a moment after "close" so the exit
+                transition has time to play — then it's removed from the tree.
+                For bigger apps use <code>react-transition-group</code> or
+                <code>framer-motion</code>; this hook is the minimal idea.
+            </p>
+        </div>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

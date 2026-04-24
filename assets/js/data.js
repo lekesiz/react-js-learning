@@ -1118,6 +1118,153 @@ window.CHAPTERS = [
       },
     ],
   },
+
+  {
+    id: "production",
+    number: 11,
+    title: "Production — resilient apps that keep working",
+    tagline: "Error boundaries, retries, optimistic UI, and data caching.",
+    description:
+      "Learning code is cheerful; production code meets flaky networks, broken components, and users who click three times. This chapter covers the small set of patterns that make a React app feel solid in the wild — error boundaries with scoped fallbacks, exponential-backoff retries, optimistic updates with rollback, Suspense for data, stale-while-revalidate caching, and prefetch-on-hover.",
+    icon: "shield",
+    defaults: { difficulty: "advanced", minutes: 12 },
+    examples: [
+      {
+        slug: "error-boundary-basic",
+        file: "errorBoundary_basic.html",
+        title: "Error Boundary — catch a render crash",
+        description:
+          "A class-based ErrorBoundary with `getDerivedStateFromError` + `componentDidCatch`, plus a retry button that resets the boundary.",
+        concepts: ["Error Boundary", "componentDidCatch", "fallback UI"],
+      },
+      {
+        slug: "error-boundary-scoped",
+        file: "errorBoundary_withRetry.html",
+        title: "Scoped boundaries — one widget at a time",
+        description:
+          "Wrap each independent subtree (chart, feed, sidebar) in its own boundary so one crash doesn't blank the whole page.",
+        concepts: ["Error Boundary", "isolation", "retry"],
+      },
+      {
+        slug: "retry-exponential-backoff",
+        file: "retry_exponentialBackoff.html",
+        title: "Retry with exponential backoff + jitter",
+        description:
+          "A `withRetry(fn)` helper that doubles the wait after each failure and adds a little jitter so many clients don't hammer in lock-step.",
+        concepts: ["retry", "backoff", "jitter"],
+      },
+      {
+        slug: "optimistic-update",
+        file: "optimistic_update.html",
+        title: "Optimistic updates — instant UI, rollback on fail",
+        description:
+          "Flip the checkbox immediately, send the request, and snap back with an inline error if the server rejects. Choose the server fail rate to see both paths.",
+        concepts: ["optimistic UI", "rollback", "mutation"],
+      },
+      {
+        slug: "suspense-for-data",
+        file: "suspense_forData.html",
+        title: "Suspense for data — a tiny `wrapPromise` resource",
+        description:
+          "The low-level primitive: a resource whose `.read()` throws the pending promise. Suspense catches it and renders the fallback until it resolves.",
+        concepts: ["Suspense", "resource", "React 18"],
+        minutes: 13,
+      },
+      {
+        slug: "stale-while-revalidate",
+        file: "staleWhileRevalidate.html",
+        title: "Stale-while-revalidate — instant cached, fresh in the background",
+        description:
+          "A 25-line `useSWR` that shows the cached value immediately and replaces it when the background fetch returns. The SWR / react-query idea at its core.",
+        concepts: ["SWR", "cache", "revalidate"],
+      },
+      {
+        slug: "prefetch-on-hover",
+        file: "prefetch_onHover.html",
+        title: "Prefetch on hover — click feels instant",
+        description:
+          "Start loading the target resource on `mouseenter`. By the time the user clicks, the response is already in cache.",
+        concepts: ["prefetch", "cache", "UX"],
+        minutes: 9,
+      },
+    ],
+  },
+
+  {
+    id: "animation-ux",
+    number: 12,
+    title: "Animation & UX — the details users feel",
+    tagline: "Motion, reorderable lists, modals, skeletons, lazy reveal.",
+    description:
+      "Great React apps feel great. This chapter covers the small motion primitives that do most of the work — CSS transitions, enter/exit animation, FLIP-based list reorder, native drag-and-drop, accessible modals with focus trap, skeleton loaders, and IntersectionObserver for scroll-in reveals.",
+    icon: "motion",
+    defaults: { difficulty: "intermediate", minutes: 9 },
+    examples: [
+      {
+        slug: "css-transitions",
+        file: "css_transitions.html",
+        title: "CSS transitions — the cheapest animation tool",
+        description:
+          "Toggle a class, let the browser interpolate. Transform + opacity keep it on the compositor for buttery 60fps.",
+        concepts: ["CSS", "transition", "transform"],
+        difficulty: "beginner",
+        minutes: 5,
+      },
+      {
+        slug: "mount-unmount-animation",
+        file: "mountUnmount_animation.html",
+        title: "Enter + exit animations with a two-phase hook",
+        description:
+          "Keep the component mounted one last frame so its exit transition can play, then unmount. The core trick inside react-transition-group.",
+        concepts: ["mount", "unmount", "two-phase"],
+        minutes: 10,
+      },
+      {
+        slug: "list-reorder-flip",
+        file: "listReorder_FLIP.html",
+        title: "FLIP animations — measure, invert, play",
+        description:
+          "Reorder a list and watch rows glide to their new positions. First/Last/Invert/Play with `useLayoutEffect`.",
+        concepts: ["FLIP", "useLayoutEffect", "reorder"],
+        difficulty: "advanced",
+        minutes: 12,
+      },
+      {
+        slug: "drag-and-drop",
+        file: "drag_and_drop.html",
+        title: "Drag and drop — native HTML5 reorder",
+        description:
+          "Make a list reorderable with `draggable`, `onDragStart`, `onDragOver`, `onDrop`. No library, all primitives.",
+        concepts: ["drag", "drop", "HTML5"],
+      },
+      {
+        slug: "modal-focus-trap",
+        file: "modal_focusTrap.html",
+        title: "Accessible modal — focus trap + Escape + restore",
+        description:
+          "Focus the first field on open, cycle Tab/Shift+Tab inside the modal, close on Escape, restore focus to the opener.",
+        concepts: ["a11y", "focus trap", "modal"],
+      },
+      {
+        slug: "skeleton-loader",
+        file: "skeleton_loader.html",
+        title: "Skeleton loaders — placeholders instead of spinners",
+        description:
+          "Set the user's layout expectation up front. A shimmering skeleton that matches the final row heights, so no content jumps when data arrives.",
+        concepts: ["skeleton", "perceived performance", "shimmer"],
+        difficulty: "beginner",
+        minutes: 6,
+      },
+      {
+        slug: "intersection-observer",
+        file: "intersection_observer.html",
+        title: "Reveal on scroll with IntersectionObserver",
+        description:
+          "Fade + slide each card in as it enters the scroll viewport — one observer per card, unsubscribed after the first hit.",
+        concepts: ["IntersectionObserver", "scroll", "reveal"],
+      },
+    ],
+  },
 ];
 
 // Flat list for search / next-prev navigation.

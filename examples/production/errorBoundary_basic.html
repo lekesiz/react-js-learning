@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Error Boundary — catch a crash</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; max-width: 560px; background: #fff; }
+        button { padding: 8px 14px; border: 1px solid #0369a1; background: #0369a1; color: #fff; border-radius: 6px; cursor: pointer; font: inherit; font-weight: 600; margin-right: 6px; }
+        button.secondary { background: #fff; color: #0369a1; }
+        .fallback { padding: 14px 16px; background: #fef2f2; color: #991b1b; border-radius: 8px; margin-top: 10px; border: 1px solid #fca5a5; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// Error boundaries are the only way to catch render-time errors and show
+// a fallback UI — hooks don't expose them, you need a class component
+// with `static getDerivedStateFromError` and `componentDidCatch`.
+
+class ErrorBoundary extends React.Component {
+    state = { error: null };
+
+    static getDerivedStateFromError(error) {
+        return { error }; // trigger a re-render with the error state
+    }
+
+    componentDidCatch(error, info) {
+        // Real apps: report to Sentry / Datadog / your logger here.
+        console.error("caught by boundary:", error, info.componentStack);
+    }
+
+    reset = () => this.setState({ error: null });
+
+    render() {
+        if (this.state.error) {
+            return (
+                <div className="fallback">
+                    <strong>Something went wrong.</strong>
+                    <div>{this.state.error.message}</div>
+                    <button onClick={this.reset} style={{ marginTop: 10, background: "#fff", color: "#991b1b", border: "1px solid #fca5a5" }}>
+                        Try again
+                    </button>
+                </div>
+            );
+        }
+        return this.props.children;
+    }
+}
+
+// Child that can be made to throw on demand
+function Unstable({ crashing }) {
+    if (crashing) throw new Error("Intentional crash for the demo.");
+    return <p>I'm happy. No crash.</p>;
+}
+
+function App() {
+    const [crashing, setCrashing] = React.useState(false);
+    return (
+        <div className="card">
+            <h1>Error Boundary — catch &amp; recover</h1>
+
+            <button onClick={() => setCrashing(true)}>Crash the child</button>
+            <button className="secondary" onClick={() => setCrashing(false)}>Fix it</button>
+
+            <ErrorBoundary>
+                <Unstable crashing={crashing} />
+            </ErrorBoundary>
+
+            <p className="muted">
+                Click <em>Crash</em> — the child throws, React unmounts it and the
+                boundary's fallback renders instead. Clicking <em>Try again</em>
+                resets the boundary; then <em>Fix it</em> lets the child render again.
+                Without the boundary the whole tree would unmount.
+            </p>
+        </div>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

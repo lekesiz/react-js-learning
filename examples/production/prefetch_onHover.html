@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Prefetch on hover — start fetching before the click</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; max-width: 580px; background: #fff; }
+        .list { list-style: none; padding: 0; margin: 10px 0; display: flex; flex-wrap: wrap; gap: 6px; }
+        .list a { display: inline-block; padding: 8px 14px; border: 1px solid #cbd5e1; border-radius: 999px; color: #334155; text-decoration: none; font-size: 14px; background: #f8fafc; cursor: pointer; }
+        .list a:hover { background: #e2e8f0; }
+        .list a.selected { background: #0369a1; color: #fff; border-color: #0369a1; }
+        .detail { padding: 14px 16px; border-radius: 8px; margin-top: 14px; min-height: 72px; }
+        .detail.loading { background: #eff6ff; color: #1d4ed8; }
+        .detail.ready { background: #ecfdf5; color: #065f46; }
+        .log { padding: 8px 10px; background: #0f172a; color: #a5f3fc; border-radius: 6px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; max-height: 150px; overflow-y: auto; margin-top: 10px; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// Prefetch on hover: user's intent usually starts before the click
+// (they move the mouse first). Start loading the resource on `mouseenter`
+// and the click feels instant. Works the same for routes (navigate) and
+// details panels (fetch).
+
+const { useState, useRef } = React;
+
+const PAGES = ["About", "Pricing", "Docs", "Team", "Contact"];
+
+// Simulate a slow fetch per page. Memoised so "visit twice" is free.
+const cache = new Map();
+function fetchPage(name) {
+    if (cache.has(name)) return cache.get(name);
+    const p = new Promise((r) => setTimeout(() =>
+        r("Loaded " + name + " at " + new Date().toLocaleTimeString()), 700));
+    cache.set(name, p);
+    return p;
+}
+
+function App() {
+    const [selected, setSelected] = useState(null);
+    const [detail, setDetail] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [log, setLog] = useState([]);
+
+    const addLog = (line) => setLog((l) => [new Date().toLocaleTimeString() + " · " + line, ...l].slice(0, 12));
+
+    const onEnter = (name) => {
+        if (!cache.has(name)) {
+            addLog(`hover ${name} → prefetch starts`);
+            fetchPage(name); // don't await; just kick it off and warm the cache
+        } else {
+            addLog(`hover ${name} → cached`);
+        }
+    };
+
+    const onClick = async (name) => {
+        setSelected(name);
+        setLoading(true);
+        const t0 = performance.now();
+        const text = await fetchPage(name);
+        const ms = Math.round(performance.now() - t0);
+        addLog(`click ${name} → ready in ${ms} ms`);
+        setDetail(text);
+        setLoading(false);
+    };
+
+    return (
+        <div className="card">
+            <h1>Prefetch on hover</h1>
+
+            <ul className="list">
+                {PAGES.map((p) => (
+                    <li key={p}>
+                        <a className={selected === p ? "selected" : ""}
+                           onMouseEnter={() => onEnter(p)}
+                           onClick={() => onClick(p)}>
+                            {p}
+                        </a>
+                    </li>
+                ))}
+            </ul>
+
+            <div className={"detail " + (loading ? "loading" : detail ? "ready" : "")}>
+                {loading ? "Loading " + selected + "…"
+                         : detail || "Hover a link — then click. Clicks after a hover feel instant."}
+            </div>
+
+            <div className="log">
+                {log.length === 0 ? "// hover/click events appear here" : log.map((l, i) => <div key={i}>{l}</div>)}
+            </div>
+
+            <p className="muted">
+                Click a link cold — 700 ms. Now hover another one, wait a bit,
+                click — the cache is warm, it's instant. <code>react-router</code>,
+                <code>Next/Link</code> and similar routers all do this automatically.
+            </p>
+        </div>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

@@ -18,6 +18,8 @@ Built from the original [echristof67/react_js](https://github.com/echristof67/re
 | 8 | Performance | `memo`, `useMemo`, `useCallback`, `lazy` + `Suspense`, virtualization, `useDeferredValue`, `useTransition`, `Profiler` |
 | 9 | Testing | in-browser Vitest/Jest-style harness: `render`, `fireEvent`, `waitFor`, mocking `fetch`, `renderHook`, best practices |
 | 10 | TypeScript | typed props, typed `useState` / `useReducer`, discriminated unions, generic components, typed Context |
+| 11 | Production | error boundaries, retries + backoff, optimistic updates, Suspense for data, SWR, prefetch-on-hover |
+| 12 | Animation & UX | CSS transitions, mount/unmount, FLIP reorder, drag-and-drop, focus-trap modal, skeletons, scroll reveal |
 
 ## How it works
 
@@ -84,7 +86,9 @@ react-js-learning/
 │   ├── data-patterns/         # Chapter 7 — 9 examples
 │   ├── performance/           # Chapter 8 — 8 examples
 │   ├── testing/               # Chapter 9 — 7 examples
-│   └── typescript/            # Chapter 10 — 7 examples
+│   ├── typescript/            # Chapter 10 — 7 examples
+│   ├── production/            # Chapter 11 — 7 examples
+│   └── animation-ux/          # Chapter 12 — 7 examples
 ├── .github/workflows/pages.yml
 ├── .gitignore
 ├── LICENSE

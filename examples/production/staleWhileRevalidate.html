@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Stale-while-revalidate — show cache, refresh in background</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; max-width: 580px; background: #fff; }
+        button { padding: 6px 12px; border: 1px solid #0369a1; background: #0369a1; color: #fff; border-radius: 6px; cursor: pointer; font: inherit; font-weight: 600; margin-right: 6px; font-size: 13px; }
+        button.secondary { background: #fff; color: #0369a1; }
+        .tabs { display: flex; gap: 6px; margin: 10px 0; }
+        .tab { padding: 6px 12px; border: 1px solid #cbd5e1; background: #f8fafc; color: #334155; border-radius: 999px; cursor: pointer; font-size: 13px; }
+        .tab.active { background: #0369a1; color: #fff; border-color: #0369a1; }
+        .quote { padding: 12px 14px; border-radius: 8px; background: #f8fafc; min-height: 72px; }
+        .quote.stale  { opacity: 0.7; }
+        .quote .badge { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; margin-left: 8px; }
+        .badge.fresh { background: #d1fae5; color: #065f46; }
+        .badge.stale { background: #fef3c7; color: #92400e; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// Stale-while-revalidate:
+//   1. Render the cached value immediately (instant).
+//   2. Kick off a fetch in the background.
+//   3. When the fetch returns, replace the cache + re-render.
+// The user sees something useful right away; fresh data catches up silently.
+
+const { useState, useEffect, useRef } = React;
+
+// Fake DB of "quotes"
+const DATA = {
+    ada:   () => "Imagination more than reason.",
+    alan:  () => "We can only see a short distance ahead.",
+    grace: () => "The most dangerous phrase is 'we've always done it this way'.",
+};
+
+const cache = new Map();  // { tab: { value, at } }
+
+async function fetchQuote(tab) {
+    await new Promise((r) => setTimeout(r, 900));                      // slow network
+    return DATA[tab]() + "  (fetched " + new Date().toLocaleTimeString() + ")";
+}
+
+function useSWR(key, fetcher) {
+    const [data, setData] = useState(() => cache.get(key)?.value);
+    const [isValidating, setIsValidating] = useState(true);
+    const current = useRef(null);
+
+    useEffect(() => {
+        setIsValidating(true);
+        const me = Symbol("req");
+        current.current = me;
+        (async () => {
+            try {
+                const fresh = await fetcher();
+                if (current.current !== me) return;
+                cache.set(key, { value: fresh, at: Date.now() });
+                setData(fresh);
+            } finally {
+                if (current.current === me) setIsValidating(false);
+            }
+        })();
+    }, [key]);
+
+    return { data, isValidating, isStale: data !== undefined && isValidating };
+}
+
+function App() {
+    const [tab, setTab] = useState("ada");
+    const { data, isValidating, isStale } = useSWR(tab, () => fetchQuote(tab));
+
+    return (
+        <div className="card">
+            <h1>Stale-while-revalidate</h1>
+
+            <div className="tabs">
+                {Object.keys(DATA).map((t) => (
+                    <button key={t} className={"tab " + (tab === t ? "active" : "")}
+                            onClick={() => setTab(t)}>{t}</button>
+                ))}
+            </div>
+
+            <div className={"quote " + (isStale ? "stale" : "")}>
+                {data
+                    ? <><span>{data}</span>
+                        {isStale
+                            ? <span className="badge stale">refreshing…</span>
+                            : <span className="badge fresh">fresh</span>}
+                      </>
+                    : "Loading…"}
+            </div>
+
+            <p className="muted">
+                Click a tab, wait 900 ms for it to fetch, then click back — you
+                see the cached answer <em>immediately</em>. A "refreshing…" badge
+                signals a background revalidation; the value updates when it lands.
+                This is what <code>swr</code>, <code>react-query</code>, Apollo all
+                implement under the hood.
+            </p>
+        </div>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

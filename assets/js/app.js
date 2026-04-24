@@ -49,6 +49,8 @@
     gauge: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6"><path d="M12 14l4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg>`,
     flask: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6"><path d="M9 3h6v6l5 9a2 2 0 0 1-1.79 2.95H5.79A2 2 0 0 1 4 18l5-9V3z"/><path d="M8 13h8"/></svg>`,
     typescript: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-6 w-6"><path d="M2 12c0-4.71 0-7.07 1.46-8.54C4.93 2 7.29 2 12 2s7.07 0 8.54 1.46C22 4.93 22 7.29 22 12s0 7.07-1.46 8.54C19.07 22 16.71 22 12 22s-7.07 0-8.54-1.46C2 19.07 2 16.71 2 12zm7.8-.5H7.3v1.4h1.5V18h1.5v-5.1h1.5v-1.4zm3.96 5.74c.47.21 1.02.31 1.66.31 1.49 0 2.58-.83 2.58-2.16 0-1.08-.66-1.6-1.79-2.03l-.34-.13c-.56-.2-.82-.39-.82-.78 0-.33.25-.58.62-.58.35 0 .6.14.82.58l1.15-.74c-.38-.78-1.1-1.09-1.97-1.09-1.25 0-2.06.8-2.06 1.86 0 1.05.6 1.55 1.65 1.96l.37.14c.6.24.96.39.96.81 0 .39-.36.67-.92.67-.66 0-1.04-.34-1.32-.82l-1.17.68c.34.73 1.03 1.33 1.86 1.33z"/></svg>`,
+    shield: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>`,
+    motion: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6"><path d="M5 12h4l3-8 4 16 3-8h4"/></svg>`,
   };
 
   // ----- difficulty / time badge helper ------------------------
@@ -73,6 +75,65 @@
       diffBadge(ex.difficulty),
       timeBadge(ex.minutes),
     );
+  }
+
+  // ----- progress tracking (localStorage) ----------------------
+  const PROGRESS_KEY = "rjs-completed";
+
+  function loadProgress() {
+    try {
+      const raw = localStorage.getItem(PROGRESS_KEY);
+      return new Set(raw ? JSON.parse(raw) : []);
+    } catch { return new Set(); }
+  }
+
+  function saveProgress(set) {
+    try { localStorage.setItem(PROGRESS_KEY, JSON.stringify([...set])); } catch {}
+  }
+
+  function isComplete(slug) {
+    return loadProgress().has(slug);
+  }
+
+  // Returns "<key>-<slug>" for the global slug; examples use chapter-scoped slugs.
+  function completeKey(chapterId, slug) { return chapterId + "/" + slug; }
+
+  function toggleComplete(chapterId, slug, force) {
+    const set = loadProgress();
+    const key = completeKey(chapterId, slug);
+    const next = typeof force === "boolean" ? force : !set.has(key);
+    if (next) set.add(key); else set.delete(key);
+    saveProgress(set);
+    return next;
+  }
+
+  function isExampleComplete(ex) {
+    return loadProgress().has(completeKey(ex.chapterId, ex.slug));
+  }
+
+  function chapterProgress(chapterId) {
+    const all = ALL_EXAMPLES.filter((e) => e.chapterId === chapterId);
+    const set = loadProgress();
+    const done = all.filter((e) => set.has(completeKey(e.chapterId, e.slug))).length;
+    return { done, total: all.length, pct: all.length ? Math.round((done / all.length) * 100) : 0 };
+  }
+
+  function overallProgress() {
+    const set = loadProgress();
+    const done = ALL_EXAMPLES.filter((e) => set.has(completeKey(e.chapterId, e.slug))).length;
+    return { done, total: ALL_EXAMPLES.length, pct: ALL_EXAMPLES.length ? Math.round((done / ALL_EXAMPLES.length) * 100) : 0 };
+  }
+
+  function progressBar(pct, opts = {}) {
+    return h("div", { class: "progress-bar " + (opts.size === "sm" ? "sm" : "") },
+      h("div", { class: "progress-fill", style: `width: ${pct}%` })
+    );
+  }
+
+  function checkIcon(filled) {
+    const fill = filled ? "#16a34a" : "none";
+    const stroke = filled ? "#16a34a" : "#cbd5e1";
+    return `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="${fill}" stroke="${stroke}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11.5 14.5 16 10" stroke="${filled ? '#fff' : stroke}" fill="none"/></svg>`;
   }
 
   // ----- theme toggle ------------------------------------------
@@ -174,18 +235,23 @@
           ),
         ),
         // Stats
-        h("div", { class: "mx-auto mt-10 grid max-w-xl grid-cols-3 gap-4 text-left sm:gap-6" },
-          ...[
-            [`${CHAPTERS.length}`, "Chapters"],
-            [`${ALL_EXAMPLES.length}`, "Hands-on examples"],
-            ["0", "Build steps"],
-          ].map(([n, l]) =>
-            h("div", { class: "rounded-xl border border-slate-200 bg-white/70 p-4 text-center dark:border-slate-800 dark:bg-slate-900/50" },
-              h("div", { class: "text-2xl font-bold text-slate-900 dark:text-white" }, n),
-              h("div", { class: "text-xs text-slate-500 dark:text-slate-400" }, l),
+        (() => {
+          const op = overallProgress();
+          return h("div", { class: "mx-auto mt-10 grid max-w-xl grid-cols-3 gap-4 text-left sm:gap-6" },
+            ...[
+              [`${CHAPTERS.length}`, "Chapters"],
+              [`${ALL_EXAMPLES.length}`, "Hands-on examples"],
+              op.done > 0
+                ? [`${op.pct}%`, `${op.done} / ${op.total} complete`]
+                : ["0", "Build steps"],
+            ].map(([n, l]) =>
+              h("div", { class: "rounded-xl border border-slate-200 bg-white/70 p-4 text-center dark:border-slate-800 dark:bg-slate-900/50" },
+                h("div", { class: "text-2xl font-bold text-slate-900 dark:text-white" }, n),
+                h("div", { class: "text-xs text-slate-500 dark:text-slate-400" }, l),
+              )
             )
-          )
-        )
+          );
+        })()
       )
     );
     app.append(hero);
@@ -196,26 +262,29 @@
       h("p", { class: "mt-2 max-w-2xl text-slate-600 dark:text-slate-300" },
         "Follow the chapters in order if you're new to React. Each chapter builds on the previous one, and every example is completely self-contained."),
       h("div", { class: "mt-8 grid gap-5 sm:grid-cols-2" },
-        ...CHAPTERS.map((c) =>
-          h("a", { href: `#/chapter/${c.id}`, class: "card group p-6" },
+        ...CHAPTERS.map((c) => {
+          const p = chapterProgress(c.id);
+          return h("a", { href: `#/chapter/${c.id}`, class: "card group p-6" },
             h("div", { class: "flex items-start gap-4" },
               h("div", { class: "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-brand-500/10 text-brand-600 dark:text-brand-400", html: ICONS[c.icon] || ICONS.code }),
-              h("div", { class: "min-w-0" },
+              h("div", { class: "min-w-0 flex-1" },
                 h("div", { class: "flex items-center gap-2" },
                   h("span", { class: "chapter-badge" }, `Chapter ${c.number}`),
                   h("span", { class: "text-xs text-slate-500 dark:text-slate-400" }, `${c.examples.length} examples`),
+                  p.done > 0 && h("span", { class: "text-xs font-semibold text-emerald-600 dark:text-emerald-400" }, `· ${p.done} / ${p.total} done`),
                 ),
                 h("h3", { class: "mt-2 text-lg font-semibold text-slate-900 group-hover:text-brand-600 dark:text-white dark:group-hover:text-brand-400" }, c.title),
                 h("p", { class: "mt-1 text-sm italic text-slate-500 dark:text-slate-400" }, c.tagline),
                 h("p", { class: "mt-3 text-sm leading-relaxed text-slate-600 dark:text-slate-300" }, c.description),
+                p.done > 0 && h("div", { class: "mt-3" }, progressBar(p.pct, { size: "sm" })),
                 h("div", { class: "mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 group-hover:gap-2 dark:text-brand-400" },
                   "Open chapter",
                   h("span", { html: `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transition-transform group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>` }),
                 ),
               )
             )
-          )
-        )
+          );
+        })
       )
     );
     app.append(chapters);
@@ -254,18 +323,23 @@
       h("span", { class: "text-slate-700 dark:text-slate-200" }, `Chapter ${chapter.number}`),
     ));
 
-    // Header
+    // Header (with chapter progress)
+    const chPg = chapterProgress(chapter.id);
     app.append(
       h("header", { class: "mt-4" },
         h("div", { class: "flex items-start gap-4" },
           h("div", { class: "flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-brand-500/10 text-brand-600 dark:text-brand-400", html: ICONS[chapter.icon] || ICONS.code }),
-          h("div", {},
+          h("div", { class: "min-w-0 flex-1" },
             h("span", { class: "chapter-badge" }, `Chapter ${chapter.number}`),
             h("h1", { class: "mt-2 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl dark:text-white" }, chapter.title),
             h("p", { class: "mt-2 text-lg italic text-slate-500 dark:text-slate-400" }, chapter.tagline),
           )
         ),
         h("p", { class: "mt-6 max-w-3xl text-slate-600 dark:text-slate-300" }, chapter.description),
+        chPg.done > 0 && h("div", { class: "mt-5 flex items-center gap-3" },
+          h("div", { class: "min-w-0 flex-1" }, progressBar(chPg.pct)),
+          h("span", { class: "whitespace-nowrap text-sm font-semibold text-emerald-600 dark:text-emerald-400" }, `${chPg.done} / ${chPg.total} complete`),
+        ),
       )
     );
 
@@ -293,13 +367,14 @@
       }
 
       filtered.forEach((ex, idx) => {
+        const done = isExampleComplete(ex);
         listWrap.append(h("li", {},
           h("a", {
             href: `#/example/${chapter.id}/${ex.slug}`,
-            class: "card flex items-start gap-4 p-4 sm:p-5",
+            class: "card flex items-start gap-4 p-4 sm:p-5" + (done ? " is-complete" : ""),
           },
-            h("div", { class: "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300" },
-              String(idx + 1).padStart(2, "0"),
+            h("div", { class: "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg " + (done ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300" : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300") + " text-xs font-semibold" },
+              done ? h("span", { html: checkIcon(true) }) : String(idx + 1).padStart(2, "0"),
             ),
             h("div", { class: "min-w-0 flex-1" },
               h("div", { class: "flex flex-wrap items-start justify-between gap-2" },
@@ -391,8 +466,41 @@
     const prev = flatIdx > 0 ? ALL_EXAMPLES[flatIdx - 1] : null;
     const next = flatIdx < ALL_EXAMPLES.length - 1 ? ALL_EXAMPLES[flatIdx + 1] : null;
 
+    // --- Sidebar with all examples in this chapter ---------------------
+    const chapterExamples = ALL_EXAMPLES.filter((e) => e.chapterId === chapter.id);
+    const sidebarItems = chapterExamples.map((e, i) => {
+      const done = isExampleComplete(e);
+      const active = e.slug === slug;
+      return h("a", {
+        href: `#/example/${chapter.id}/${e.slug}`,
+        class: "viewer-sidebar-item" + (active ? " active" : "") + (done ? " complete" : ""),
+        title: e.title,
+      },
+        h("span", { class: "viewer-sidebar-num" },
+          done ? h("span", { html: checkIcon(true) }) : String(i + 1).padStart(2, "0")),
+        h("span", { class: "viewer-sidebar-title" }, e.title),
+      );
+    });
+
+    const chPg = chapterProgress(chapter.id);
+    const sidebar = h("aside", { class: "viewer-sidebar" },
+      h("div", { class: "viewer-sidebar-header" },
+        h("a", { href: `#/chapter/${chapter.id}`, class: "flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400" },
+          h("span", { html: `<svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 6l-6 6 6 6"/></svg>` }),
+          `Chapter ${chapter.number}`,
+        ),
+        h("div", { class: "mt-1 text-sm font-semibold text-slate-900 dark:text-white" }, chapter.title.split("—")[0].trim()),
+        chPg.done > 0 && h("div", { class: "mt-2" }, progressBar(chPg.pct, { size: "sm" })),
+        chPg.done > 0 && h("div", { class: "mt-1 text-[11px] text-slate-500 dark:text-slate-400" }, `${chPg.done} / ${chPg.total} complete`),
+      ),
+      h("nav", { class: "viewer-sidebar-list" }, ...sidebarItems),
+    );
+
+    // --- Main column ---------------------------------------------------
+    const main = h("div", { class: "viewer-main" });
+
     // Breadcrumb
-    app.append(
+    main.append(
       h("nav", { class: "flex flex-wrap items-center gap-2 text-sm text-slate-500 dark:text-slate-400" },
         h("a", { href: "#/", class: "hover:text-brand-600 dark:hover:text-brand-400" }, "Home"),
         h("span", {}, "/"),
@@ -402,10 +510,37 @@
       )
     );
 
-    // Header
-    app.append(
+    // Header with mark-complete toggle
+    const completeBtn = h("button", {
+      class: "mark-complete",
+      type: "button",
+    });
+
+    function updateCompleteBtn() {
+      const done = isExampleComplete(ex);
+      completeBtn.className = "mark-complete" + (done ? " done" : "");
+      completeBtn.innerHTML = "";
+      completeBtn.append(
+        h("span", { html: checkIcon(done) }),
+        done ? "Completed" : "Mark as complete",
+      );
+    }
+    completeBtn.addEventListener("click", () => {
+      const next = toggleComplete(ex.chapterId, ex.slug);
+      updateCompleteBtn();
+      // Update this item's indicator in the sidebar without a full re-render
+      const item = sidebar.querySelectorAll(".viewer-sidebar-item")[flatIdx - chapterExamples.findIndex((e) => e.chapterId === chapter.id) /* ignore */];
+      // Simpler: just re-render the whole page to refresh all visuals
+      render();
+    });
+    updateCompleteBtn();
+
+    main.append(
       h("header", { class: "mt-4" },
-        h("h1", { class: "text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-white" }, ex.title),
+        h("div", { class: "flex flex-wrap items-start justify-between gap-3" },
+          h("h1", { class: "text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-white" }, ex.title),
+          completeBtn,
+        ),
         h("div", { class: "mt-3" }, renderBadges(ex)),
         h("p", { class: "mt-3 max-w-3xl text-slate-600 dark:text-slate-300" }, ex.description),
         ex.concepts && ex.concepts.length
@@ -475,21 +610,10 @@
       iframe,
     );
 
-    app.append(h("div", { class: "viewer-grid mt-6" }, codePanel, previewPanel));
-
-    // Fetch source code and highlight
-    try {
-      const res = await fetch(path);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const txt = await res.text();
-      codePre.querySelector("code").textContent = txt;
-      if (window.Prism) Prism.highlightElement(codePre.querySelector("code"));
-    } catch (err) {
-      codePre.querySelector("code").textContent = `// Could not load source (${err.message}).\n// Try opening the preview in a new tab.`;
-    }
+    main.append(h("div", { class: "viewer-grid mt-6" }, codePanel, previewPanel));
 
     // Prev / next
-    app.append(
+    main.append(
       h("div", { class: "mt-10 grid gap-4 sm:grid-cols-2" },
         prev
           ? h("a", { href: `#/example/${prev.chapterId}/${prev.slug}`, class: "group card p-4" },
@@ -505,6 +629,20 @@
           : h("div", {}),
       )
     );
+
+    // Finally: sidebar + main in a layout container
+    app.append(h("div", { class: "viewer-layout" }, sidebar, main));
+
+    // Fetch source code and highlight (async, after layout is in the DOM)
+    try {
+      const res = await fetch(path);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const txt = await res.text();
+      codePre.querySelector("code").textContent = txt;
+      if (window.Prism) Prism.highlightElement(codePre.querySelector("code"));
+    } catch (err) {
+      codePre.querySelector("code").textContent = `// Could not load source (${err.message}).\n// Try opening the preview in a new tab.`;
+    }
   }
 
   // ----- NOT FOUND ----------------------------------------------

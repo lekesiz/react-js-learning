@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Optimistic updates — instant UI, rollback on fail</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; max-width: 560px; background: #fff; }
+        .row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; margin-top: 6px; }
+        .row input[type="checkbox"] { margin: 0; }
+        .row.pending { background: #fef3c7; border-color: #fbbf24; }
+        .row.error { background: #fef2f2; border-color: #fca5a5; }
+        .row span { flex: 1; }
+        .row small { color: #64748b; font-size: 12px; }
+        .row.pending small { color: #b45309; }
+        .row.error small { color: #b91c1c; }
+        .toolbar { margin-top: 10px; display: flex; gap: 10px; align-items: center; }
+        label { font-size: 13px; color: #475569; display: inline-flex; align-items: center; gap: 6px; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// Optimistic updates:
+//   1. Apply the change locally IMMEDIATELY (UI feels instant).
+//   2. Send the request.
+//   3. On success: confirm (drop the pending state).
+//   4. On failure: roll back to the previous value + surface the error.
+// Result: no spinner per click, but still correct when something breaks.
+
+const { useState } = React;
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// Fake "server": returns in ~500ms, fails when failRate is rolled
+async function saveTodo({ id, done }, { failRate = 0 }) {
+    await sleep(500);
+    if (Math.random() < failRate) throw new Error("Server said no.");
+    return { id, done };
+}
+
+function App() {
+    const [todos, setTodos] = useState([
+        { id: 1, text: "Buy coffee beans", done: false },
+        { id: 2, text: "Draft the quarterly report", done: false },
+        { id: 3, text: "Review PR #42", done: true },
+    ]);
+    const [failRate, setFailRate] = useState(0); // 0 = always succeed, 0.5 = flaky, 1 = always fail
+    const [status, setStatus] = useState({}); // { [id]: "pending" | "error:<msg>" }
+
+    async function toggle(id) {
+        setTodos((ts) => ts.map((t) => (t.id === id ? { ...t, done: !t.done } : t)));
+        setStatus((s) => ({ ...s, [id]: "pending" }));
+        const target = todos.find((t) => t.id === id);
+        try {
+            await saveTodo({ id, done: !target.done }, { failRate });
+            setStatus((s) => { const { [id]: _, ...rest } = s; return rest; });
+        } catch (e) {
+            // Roll back: flip the checkbox back to the server-truth value
+            setTodos((ts) => ts.map((t) => (t.id === id ? { ...t, done: target.done } : t)));
+            setStatus((s) => ({ ...s, [id]: "error:" + e.message }));
+        }
+    }
+
+    return (
+        <div className="card">
+            <h1>Optimistic toggle with rollback</h1>
+
+            {todos.map((t) => {
+                const st = status[t.id];
+                const cls = st === "pending" ? "pending" : (st && st.startsWith("error")) ? "error" : "";
+                return (
+                    <div key={t.id} className={"row " + cls}>
+                        <input type="checkbox" checked={t.done}
+                               onChange={() => toggle(t.id)} disabled={st === "pending"} />
+                        <span style={{ textDecoration: t.done ? "line-through" : "none" }}>{t.text}</span>
+                        {st === "pending"            && <small>syncing…</small>}
+                        {st && st.startsWith("error") && <small>rolled back — {st.slice(6)}</small>}
+                    </div>
+                );
+            })}
+
+            <div className="toolbar">
+                <label>
+                    Server fail rate:
+                    <select value={failRate} onChange={(e) => setFailRate(Number(e.target.value))}>
+                        <option value={0}>0% — always succeeds</option>
+                        <option value={0.5}>50% — flaky</option>
+                        <option value={1}>100% — always fails</option>
+                    </select>
+                </label>
+            </div>
+
+            <p className="muted">
+                Toggle a checkbox — it flips instantly. With 50% fail, half the
+                toggles snap back after ~500 ms with a red error row. Users keep
+                flowing; only the unlucky ones see a transient warning.
+            </p>
+        </div>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

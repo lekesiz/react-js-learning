@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>List reorder — FLIP animations</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; max-width: 520px; background: #fff; }
+        button { padding: 6px 12px; border: 1px solid #0369a1; background: #0369a1; color: #fff; border-radius: 6px; cursor: pointer; font: inherit; font-weight: 600; margin-right: 4px; font-size: 13px; }
+        .item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 14px; border: 1px solid #e5e7eb; border-radius: 8px;
+            margin-top: 6px; background: #fff;
+        }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// FLIP = First, Last, Invert, Play.
+// 1. BEFORE state change, measure each node's box.   (First)
+// 2. Let React re-render → the DOM jumps to the new order.  (Last)
+// 3. For each node, compute (oldPos - newPos) and translate it back there. (Invert)
+// 4. Animate the translate to 0.                     (Play)
+
+const { useState, useRef, useLayoutEffect } = React;
+
+const DATA = [
+    { id: "ada",   label: "Ada Lovelace",    score: 92 },
+    { id: "alan",  label: "Alan Turing",     score: 88 },
+    { id: "grace", label: "Grace Hopper",    score: 95 },
+    { id: "dennis",label: "Dennis Ritchie",  score: 85 },
+];
+
+function App() {
+    const [sort, setSort] = useState("id");
+    const sorted = [...DATA].sort((a, b) => {
+        if (sort === "name")  return a.label.localeCompare(b.label);
+        if (sort === "score") return b.score - a.score;
+        return a.id.localeCompare(b.id);
+    });
+
+    const refs = useRef({});      // id -> DOM node
+    const positions = useRef({}); // id -> top (before re-render)
+
+    // 1. Capture positions BEFORE the DOM updates
+    // (useLayoutEffect runs AFTER render but before paint — same rAF cycle)
+    useLayoutEffect(() => {
+        const prev = positions.current;
+        const next = {};
+        for (const [id, node] of Object.entries(refs.current)) {
+            if (!node) continue;
+            next[id] = node.getBoundingClientRect().top;
+            if (prev[id] != null) {
+                const delta = prev[id] - next[id];
+                if (delta !== 0) {
+                    node.style.transition = "none";
+                    node.style.transform = `translateY(${delta}px)`;
+                    requestAnimationFrame(() => {
+                        node.style.transition = "transform 320ms cubic-bezier(0.2, 0.9, 0.2, 1)";
+                        node.style.transform = "translateY(0)";
+                    });
+                }
+            }
+        }
+        positions.current = next;
+    });
+
+    return (
+        <div className="card">
+            <h1>Reorder list with FLIP</h1>
+            <div style={{ marginBottom: 10 }}>
+                <button onClick={() => setSort("id")}>Sort: original</button>
+                <button onClick={() => setSort("name")}>Sort: name</button>
+                <button onClick={() => setSort("score")}>Sort: score ↓</button>
+            </div>
+
+            <div>
+                {sorted.map((p) => (
+                    <div key={p.id}
+                         ref={(el) => (refs.current[p.id] = el)}
+                         className="item">
+                        <span>{p.label}</span>
+                        <strong>{p.score}</strong>
+                    </div>
+                ))}
+            </div>
+
+            <p className="muted">
+                Click a sort button. Instead of items snapping to new positions,
+                they glide. This is how <code>framer-motion</code>'s
+                <code>&lt;Reorder&gt;</code> works under the hood.
+            </p>
+        </div>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

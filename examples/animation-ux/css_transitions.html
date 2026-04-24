@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CSS transitions — the default animation tool</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; max-width: 520px; background: #fff; }
+        button { padding: 8px 14px; border: 1px solid #0369a1; background: #0369a1; color: #fff; border-radius: 6px; cursor: pointer; font: inherit; font-weight: 600; margin-right: 6px; transition: transform 160ms ease, background 160ms ease; }
+        button:hover { transform: translateY(-2px); background: #075985; }
+        .box {
+            width: 120px; height: 120px; background: #06a4ef;
+            border-radius: 12px;
+            margin: 14px 0;
+            transition: transform 280ms cubic-bezier(0.2, 0.9, 0.2, 1), background 280ms ease, border-radius 280ms ease;
+        }
+        .box.big { transform: scale(1.35) rotate(18deg); background: #0369a1; border-radius: 40px; }
+        .fade { transition: opacity 240ms ease; }
+        .fade.hidden { opacity: 0.15; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// The cheapest, most performant animation tool: plain CSS transitions.
+// Toggle a class — the browser interpolates between the before/after
+// property values over the specified duration/easing.
+
+const { useState } = React;
+
+function App() {
+    const [big, setBig]       = useState(false);
+    const [hidden, setHidden] = useState(false);
+
+    return (
+        <div className="card">
+            <h1>CSS transitions — toggle a class, get an animation</h1>
+
+            <button onClick={() => setBig((b) => !b)}>Scale + rotate</button>
+            <button onClick={() => setHidden((h) => !h)}>Fade</button>
+
+            <div className={"box " + (big ? "big" : "") + " fade " + (hidden ? "hidden" : "")} />
+
+            <p className="muted">
+                The only React work is toggling a className. CSS does the rest,
+                on the compositor. <code>transform</code> and <code>opacity</code>
+                are the two properties you should reach for first — they don't
+                trigger layout or paint.
+            </p>
+        </div>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

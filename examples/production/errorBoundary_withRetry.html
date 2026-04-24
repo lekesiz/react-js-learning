@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Error Boundary — scoped fallbacks + retry</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        h2 { font-size: 15px; margin: 0 0 8px; color: #334155; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; max-width: 560px; background: #fff; margin-bottom: 10px; }
+        button { padding: 6px 12px; border: 1px solid #0369a1; background: #0369a1; color: #fff; border-radius: 6px; cursor: pointer; font: inherit; font-weight: 600; margin-right: 4px; font-size: 13px; }
+        button.secondary { background: #fff; color: #0369a1; }
+        .fallback { padding: 10px 14px; background: #fef2f2; color: #991b1b; border-radius: 8px; border: 1px solid #fca5a5; margin-top: 6px; }
+        .widget { padding: 10px 14px; background: #ecfdf5; color: #065f46; border-radius: 8px; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// Boundaries can be scoped. Put one around each independent widget so a crash
+// in the chart doesn't take down the sidebar. Add a `resetKey` prop so an
+// external "Try again" button can force the boundary to remount its children.
+
+class Boundary extends React.Component {
+    state = { error: null, key: 0 };
+
+    static getDerivedStateFromError(error) { return { error }; }
+
+    componentDidUpdate(prevProps) {
+        if (prevProps.resetKey !== this.props.resetKey && this.state.error) {
+            this.setState({ error: null, key: this.state.key + 1 });
+        }
+    }
+
+    reset = () => this.setState({ error: null, key: this.state.key + 1 });
+
+    render() {
+        const { error, key } = this.state;
+        if (error) {
+            return (
+                <div className="fallback">
+                    <strong>{this.props.label} crashed.</strong>
+                    <div style={{ fontSize: 13, marginTop: 2 }}>{error.message}</div>
+                    <button className="secondary" style={{ marginTop: 8, borderColor: "#fca5a5", color: "#991b1b" }}
+                            onClick={this.reset}>Retry this widget</button>
+                </div>
+            );
+        }
+        return <React.Fragment key={key}>{this.props.children}</React.Fragment>;
+    }
+}
+
+function Sidebar()      { return <div className="widget">Sidebar (works)</div>; }
+function BrokenChart({ broken }) {
+    if (broken) throw new Error("Chart: data is null");
+    return <div className="widget">Chart rendered.</div>;
+}
+function BrokenFeed({ broken }) {
+    if (broken) throw new Error("Feed: 401 Unauthorized");
+    return <div className="widget">Feed rendered.</div>;
+}
+
+function App() {
+    const [chartBroken, setChartBroken] = React.useState(false);
+    const [feedBroken, setFeedBroken]   = React.useState(false);
+
+    return (
+        <div>
+            <h1>Scoped boundaries — one widget at a time</h1>
+
+            <div className="card">
+                <h2>Sidebar</h2>
+                <Boundary label="Sidebar"><Sidebar /></Boundary>
+            </div>
+
+            <div className="card">
+                <h2>Chart</h2>
+                <Boundary label="Chart">
+                    <BrokenChart broken={chartBroken} />
+                </Boundary>
+                <div style={{ marginTop: 8 }}>
+                    <button onClick={() => setChartBroken((x) => !x)}>
+                        {chartBroken ? "Restore chart" : "Crash chart"}
+                    </button>
+                </div>
+            </div>
+
+            <div className="card">
+                <h2>Feed</h2>
+                <Boundary label="Feed">
+                    <BrokenFeed broken={feedBroken} />
+                </Boundary>
+                <div style={{ marginTop: 8 }}>
+                    <button onClick={() => setFeedBroken((x) => !x)}>
+                        {feedBroken ? "Restore feed" : "Crash feed"}
+                    </button>
+                </div>
+            </div>
+
+            <p className="muted">
+                Crash the chart — the chart's fallback shows, the feed and sidebar
+                keep working. Click <em>Retry this widget</em> in the fallback to
+                re-mount just that subtree.
+            </p>
+        </div>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

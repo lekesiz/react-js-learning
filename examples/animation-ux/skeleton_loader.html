@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Skeleton loaders — placeholders while loading</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; max-width: 560px; background: #fff; }
+        button { padding: 6px 12px; border: 1px solid #0369a1; background: #0369a1; color: #fff; border-radius: 6px; cursor: pointer; font: inherit; font-weight: 600; }
+
+        .row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #f1f5f9; }
+        .row:last-child { border-bottom: none; }
+        .avatar { width: 40px; height: 40px; border-radius: 50%; background: #e5e7eb; flex-shrink: 0; }
+        .lines { flex: 1; }
+        .line  { height: 12px; background: #e5e7eb; border-radius: 4px; }
+        .line + .line { margin-top: 6px; }
+        .line.w-60 { width: 60%; }
+        .line.w-40 { width: 40%; }
+
+        /* Shimmer animation on the skeleton */
+        .skeleton .avatar,
+        .skeleton .line {
+            background: linear-gradient(90deg, #e5e7eb 0%, #f1f5f9 50%, #e5e7eb 100%);
+            background-size: 200% 100%;
+            animation: shimmer 1.2s infinite;
+        }
+        @keyframes shimmer {
+            0%   { background-position:  200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        .real strong { font-size: 14px; }
+        .real small  { color: #64748b; font-size: 12px; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// Skeletons replace spinners in modern UIs: they set an expectation of the
+// layout, so content flowing in doesn't shift the page. The skeleton uses
+// the SAME dimensions as the real content will use.
+
+const { useState, useEffect } = React;
+
+const USERS = [
+    { id: 1, name: "Ada Lovelace",    role: "Mathematician" },
+    { id: 2, name: "Alan Turing",     role: "Cryptanalyst" },
+    { id: 3, name: "Grace Hopper",    role: "Compiler pioneer" },
+    { id: 4, name: "Dennis Ritchie",  role: "C & Unix" },
+];
+
+function Skeleton() {
+    return (
+        <div className="skeleton">
+            {[0,1,2,3].map((i) => (
+                <div key={i} className="row">
+                    <div className="avatar" />
+                    <div className="lines">
+                        <div className="line w-60" />
+                        <div className="line w-40" />
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+}
+
+function Users({ users }) {
+    return (
+        <div className="real">
+            {users.map((u) => (
+                <div key={u.id} className="row">
+                    <div className="avatar" style={{ background: "#bae6fd" }} />
+                    <div className="lines">
+                        <strong>{u.name}</strong>
+                        <div><small>{u.role}</small></div>
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+}
+
+function App() {
+    const [state, setState] = useState("loading");
+    const [users, setUsers] = useState([]);
+
+    function load() {
+        setState("loading");
+        setUsers([]);
+        setTimeout(() => { setUsers(USERS); setState("ready"); }, 1200);
+    }
+    useEffect(() => { load(); }, []);
+
+    return (
+        <div className="card">
+            <h1>Skeleton vs. populated</h1>
+            <button onClick={load}>Reload</button>
+
+            <div style={{ marginTop: 12 }}>
+                {state === "loading" ? <Skeleton /> : <Users users={users} />}
+            </div>
+
+            <p className="muted">
+                The skeleton and the populated list have the same row heights,
+                so the page doesn't jump when real data arrives.
+            </p>
+        </div>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

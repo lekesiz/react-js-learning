@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Suspense for data — the `throw a promise` trick</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; max-width: 560px; background: #fff; }
+        button { padding: 8px 14px; border: 1px solid #0369a1; background: #0369a1; color: #fff; border-radius: 6px; cursor: pointer; font: inherit; font-weight: 600; margin-right: 6px; }
+        .fallback { padding: 14px 16px; background: #eff6ff; color: #1d4ed8; border-radius: 8px; margin-top: 10px; }
+        .user { padding: 14px 16px; background: #ecfdf5; color: #065f46; border-radius: 8px; margin-top: 10px; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// Suspense for data (low-level): a "resource" is an object with a .read()
+// method that either:
+//   - returns the data (when ready),
+//   - THROWS the pending promise (React catches it → renders fallback),
+//   - re-throws an error (React re-throws → Error Boundary catches).
+// Libraries like Relay, SWR, React Query wrap this for you.
+
+const { useState, Suspense } = React;
+
+function wrapPromise(promise) {
+    let status = "pending";
+    let result;
+    const suspender = promise.then(
+        (r) => { status = "success"; result = r; },
+        (e) => { status = "error";   result = e; }
+    );
+    return {
+        read() {
+            if (status === "pending") throw suspender;
+            if (status === "error")   throw result;
+            return result;
+        },
+    };
+}
+
+function fetchUser(id) {
+    return wrapPromise(
+        new Promise((resolve) =>
+            setTimeout(() => resolve({ id, name: "User " + id, joined: new Date().toLocaleDateString() }), 900)
+        )
+    );
+}
+
+function UserCard({ resource }) {
+    const user = resource.read(); // suspends if not ready
+    return (
+        <div className="user">
+            <strong>{user.name}</strong> <span style={{ opacity: 0.7 }}>(id {user.id})</span>
+            <div style={{ fontSize: 13, marginTop: 4 }}>Joined: {user.joined}</div>
+        </div>
+    );
+}
+
+function App() {
+    const [resource, setResource] = useState(() => fetchUser(1));
+
+    return (
+        <div className="card">
+            <h1>Suspense reads a "resource"</h1>
+            <button onClick={() => setResource(fetchUser(Math.ceil(Math.random() * 1000)))}>
+                Load another user
+            </button>
+
+            <Suspense fallback={<div className="fallback">Loading user…</div>}>
+                <UserCard resource={resource} />
+            </Suspense>
+
+            <p className="muted">
+                Every time we create a fresh resource, its <code>.read()</code>
+                throws until the promise settles — and the <code>Suspense</code>
+                fallback covers the gap. In 99% of real apps you'd use a data
+                library (React Query, SWR, Relay) that encapsulates this pattern.
+            </p>
+        </div>
+    );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

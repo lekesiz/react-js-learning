@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Intersection Observer — reveal on scroll-in</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; max-width: 560px; background: #fff; }
+        .scroll {
+            height: 360px; overflow-y: auto;
+            border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px;
+            background: #f8fafc;
+        }
+        .item {
+            padding: 14px; margin-top: 8px; border-radius: 8px; background: #fff;
+            border: 1px solid #e5e7eb; font-size: 13px; color: #475569;
+            opacity: 0; transform: translateY(18px);
+            transition: opacity 500ms ease, transform 500ms cubic-bezier(0.2, 0.9, 0.2, 1);
+        }
+        .item.visible { opacity: 1; transform: none; }
+        .item strong { color: #0f172a; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// IntersectionObserver: fires a callback when a target enters / leaves the
+// viewport (or a custom scroll root). Use it for:
+//   - "fade in as you scroll" reveals
+//   - lazy-loading images / components
+//   - infinite scroll sentinels
+// Way cheaper than scroll listeners + manual getBoundingClientRect().
+
+const { useState, useRef, useEffect } = React;
+
+function Reveal({ children, rootRef }) {
+    const el = useRef(null);
+    const [seen, setSeen] = useState(false);
+
+    useEffect(() => {
+        const node = el.current;
+        const io = new IntersectionObserver(
+            (entries) => {
+                for (const e of entries) {
+                    if (e.isIntersecting) {
+                        setSeen(true);
+                        io.unobserve(e.target); // one-shot
+                    }
+                }
+            },
+            { root: rootRef.current, threshold: 0.2 }
+        );
+        io.observe(node);
+        return () => io.disconnect();
+    }, [rootRef]);
+
+    return <div ref={el} className={"item " + (seen ? "visible" : "")}>{children}</div>;
+}
+
+function App() {
+    const scrollRef = useRef(null);
+    const items = Array.from({ length: 20 }, (_, i) => ({
+        id: i, title: "Card #" + (i + 1),
+        body: "Scroll the container. Each card fades + slides into place when it crosses 20% of its own height into view.",
+    }));
+
+    return (
+        <div className="card">
+            <h1>Reveal on scroll-in</h1>
+
+            <div className="scroll" ref={scrollRef}>
+                {items.map((it) => (
+                    <Reveal key={it.id} rootRef={scrollRef}>
+                        <strong>{it.title}</strong>
+                        <div>{it.body}</div>
+                    </Reveal>
+                ))}
+            </div>
+
+            <p className="muted">
+                One observer per card, unsubscribed after the first hit. No scroll
+                listeners, no layout-thrashing measurements — the browser tells
+                you when each card comes into view.
+            </p>
+        </div>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>
