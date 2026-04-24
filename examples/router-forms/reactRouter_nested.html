@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>React Router — nested routes</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/react-router-dom@5.3.4/umd/react-router-dom.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 22px; margin: 0 0 12px; }
+        h2 { font-size: 18px; margin: 0 0 8px; }
+        h3 { font-size: 15px; margin: 0 0 6px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; max-width: 640px; background: #fff; }
+        nav a { padding: 6px 12px; margin-right: 6px; border-radius: 6px; text-decoration: none; color: #334155; border: 1px solid #cbd5e1; background: #f8fafc; font-size: 14px; display: inline-block; margin-bottom: 6px; }
+        nav a:hover { background: #e2e8f0; }
+        nav a.active { background: #0369a1; color: #fff; border-color: #0369a1; }
+        .layout { border: 1px dashed #cbd5e1; border-radius: 8px; padding: 14px; margin-top: 12px; background: #f8fafc; }
+        .nested { border: 1px dashed #c7d2fe; border-radius: 8px; padding: 12px; margin-top: 10px; background: #eef2ff; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// Nested routes let a parent own its own layout AND decide which child
+// route renders inside it. Here /settings renders the Settings shell,
+// and /settings/profile or /settings/account fill the inner slot.
+
+const { HashRouter, Switch, Route, NavLink, useRouteMatch } = ReactRouterDOM;
+
+function Profile() {
+    return <div className="nested"><h3>Profile</h3><p>Display name, avatar, bio.</p></div>;
+}
+
+function Account() {
+    return <div className="nested"><h3>Account</h3><p>Email, password, sessions.</p></div>;
+}
+
+function Billing() {
+    return <div className="nested"><h3>Billing</h3><p>Plan, invoices, card.</p></div>;
+}
+
+function SettingsEmpty() {
+    return <p className="muted">Pick a sub-section on the left.</p>;
+}
+
+function Settings() {
+    // useRouteMatch() gives us the parent URL so child links are relative-safe.
+    const { path, url } = useRouteMatch();
+
+    return (
+        <div className="layout">
+            <h2>Settings (layout)</h2>
+            <nav>
+                <NavLink to={`${url}/profile`} activeClassName="active">Profile</NavLink>
+                <NavLink to={`${url}/account`} activeClassName="active">Account</NavLink>
+                <NavLink to={`${url}/billing`} activeClassName="active">Billing</NavLink>
+            </nav>
+            <Switch>
+                <Route exact path={path}><SettingsEmpty /></Route>
+                <Route path={`${path}/profile`}><Profile /></Route>
+                <Route path={`${path}/account`}><Account /></Route>
+                <Route path={`${path}/billing`}><Billing /></Route>
+            </Switch>
+        </div>
+    );
+}
+
+function Home() {
+    return <div><h2>Home</h2><p>Top-level page. Head to Settings to see nesting.</p></div>;
+}
+
+function App() {
+    return (
+        <HashRouter>
+            <div className="card">
+                <h1>Nested routes</h1>
+                <nav>
+                    <NavLink exact to="/" activeClassName="active">Home</NavLink>
+                    <NavLink to="/settings" activeClassName="active">Settings</NavLink>
+                </nav>
+                <Switch>
+                    <Route exact path="/"><Home /></Route>
+                    <Route path="/settings"><Settings /></Route>
+                </Switch>
+                <p className="muted">
+                    <code>&lt;Settings&gt;</code> owns both its own layout (title + sub-nav)
+                    and the slot where child routes render — each sub-section gets a clean URL.
+                </p>
+            </div>
+        </HashRouter>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

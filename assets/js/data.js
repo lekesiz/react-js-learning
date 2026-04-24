@@ -709,6 +709,98 @@ window.CHAPTERS = [
       },
     ],
   },
+
+  {
+    id: "router-forms",
+    number: 6,
+    title: "Router & Forms — multi-page apps that collect input",
+    tagline: "URL-driven UI and the forms users actually fill in.",
+    description:
+      "Most real apps do two things: they have more than one page, and they ask the user for input. This chapter covers both — from a 15-line hand-rolled hash router through React Router's Link/Route/useParams/nested layouts, then on to controlled forms: shared handlers, submit + preventDefault, required / regex / real-time validation, and a full multi-step wizard.",
+    icon: "route",
+    examples: [
+      {
+        slug: "diy-hash-router",
+        file: "diy_hashRouter.html",
+        title: "DIY hash router in ~15 lines",
+        description:
+          "Build the simplest possible router from `useState` + `hashchange` so you see exactly what React Router abstracts.",
+        concepts: ["hashchange", "useState", "custom hook"],
+      },
+      {
+        slug: "react-router-basic",
+        file: "reactRouter_basic.html",
+        title: "React Router — HashRouter, Route, Switch, NavLink",
+        description:
+          "Swap the hand-rolled router for React Router v5. Same model: URL drives UI — but with Link, NavLink, Switch, and a 404 catch-all.",
+        concepts: ["React Router", "HashRouter", "Switch", "NavLink"],
+      },
+      {
+        slug: "react-router-params",
+        file: "reactRouter_params.html",
+        title: "React Router — URL params (`useParams`)",
+        description:
+          "Dynamic segments like `/users/:id` and how `useParams()` + `useHistory()` turn the URL into the source of truth.",
+        concepts: ["useParams", "useHistory", "dynamic routes"],
+      },
+      {
+        slug: "react-router-nested",
+        file: "reactRouter_nested.html",
+        title: "React Router — nested routes & layouts",
+        description:
+          "A Settings section that owns its own layout and child routes (Profile / Account / Billing) — the archetype of real apps.",
+        concepts: ["nested routes", "layout", "useRouteMatch"],
+      },
+      {
+        slug: "form-controlled-single",
+        file: "form_controlled_single.html",
+        title: "Controlled input — recap",
+        description:
+          "Quick refresher: `value={state}` + `onChange={setter}` — the pattern every bigger form builds on.",
+        concepts: ["controlled input", "useState"],
+      },
+      {
+        slug: "form-multi-field",
+        file: "form_multiField_sharedHandler.html",
+        title: "Many fields, one handler — `[name]` dispatch",
+        description:
+          "Keep the whole form in one state object and write a single `onChange` that dispatches on the input's `name`.",
+        concepts: ["shared handler", "computed keys", "checkbox"],
+      },
+      {
+        slug: "form-submit-prevent-default",
+        file: "form_submit_preventDefault.html",
+        title: "Form submission — `preventDefault` + gather data",
+        description:
+          "Handle `onSubmit`, stop the default POST-and-reload, and push the collected entry into a list.",
+        concepts: ["onSubmit", "preventDefault", "state update"],
+      },
+      {
+        slug: "form-validation-required",
+        file: "form_validation_required.html",
+        title: "Validation — required fields with touched state",
+        description:
+          "Show errors only after a field is touched or the user tries to submit. Disable the submit button until everything's valid.",
+        concepts: ["validation", "touched", "disabled submit"],
+      },
+      {
+        slug: "form-validation-email-regex",
+        file: "form_validation_emailRegex.html",
+        title: "Validation — email regex + password strength meter",
+        description:
+          "Real-time feedback: a regex-driven email check plus a 5-level password strength meter derived purely from state.",
+        concepts: ["regex", "derived state", "strength meter"],
+      },
+      {
+        slug: "form-multi-step-wizard",
+        file: "form_multiStep_wizard.html",
+        title: "Multi-step sign-up wizard",
+        description:
+          "Three steps (Account → Profile → Review) sharing one state object; each step validates its own slice before Next unlocks.",
+        concepts: ["wizard", "step state", "per-step validation"],
+      },
+    ],
+  },
 ];
 
 // Flat list for search / next-prev navigation

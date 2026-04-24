@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>React Router — basic routing</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/react-router-dom@5.3.4/umd/react-router-dom.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 22px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; max-width: 600px; background: #fff; }
+        nav a { padding: 6px 12px; margin-right: 6px; border-radius: 6px; text-decoration: none; color: #334155; border: 1px solid #cbd5e1; background: #f8fafc; font-size: 14px; display: inline-block; margin-bottom: 8px; }
+        nav a:hover { background: #e2e8f0; }
+        nav a.active { background: #0369a1; color: #fff; border-color: #0369a1; }
+        .view { padding: 20px; border-radius: 8px; background: #f8fafc; margin-top: 12px; min-height: 80px; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// React Router lets you swap your hand-rolled router for a battle-tested one.
+// Same model — URL drives UI — but with <Route>, <Switch>, <Link>, <NavLink>.
+// Using HashRouter so the page works as a plain static file (no server rewrites).
+
+const { HashRouter, Switch, Route, Link, NavLink } = ReactRouterDOM;
+
+function Home()    { return <div><h2>Home</h2><p>Landing page.</p></div>; }
+function About()   { return <div><h2>About</h2><p>About the project.</p></div>; }
+function Contact() { return <div><h2>Contact</h2><p>Reach us (fictional).</p></div>; }
+function NotFound({ location }) {
+    return <div><h2>404</h2><p>No route matches <code>{location.pathname}</code>.</p></div>;
+}
+
+function App() {
+    return (
+        <HashRouter>
+            <div className="card">
+                <h1>React Router — basic routing</h1>
+                <nav>
+                    <NavLink exact to="/" activeClassName="active">Home</NavLink>
+                    <NavLink to="/about" activeClassName="active">About</NavLink>
+                    <NavLink to="/contact" activeClassName="active">Contact</NavLink>
+                    <NavLink to="/nope" activeClassName="active">Broken link</NavLink>
+                </nav>
+                <div className="view">
+                    <Switch>
+                        <Route exact path="/"><Home /></Route>
+                        <Route path="/about"><About /></Route>
+                        <Route path="/contact"><Contact /></Route>
+                        <Route component={NotFound} />
+                    </Switch>
+                </div>
+                <p className="muted">
+                    <code>&lt;Switch&gt;</code> renders the first matching route;
+                    <code>&lt;NavLink&gt;</code> automatically adds a className when
+                    the link is active.
+                </p>
+            </div>
+        </HashRouter>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

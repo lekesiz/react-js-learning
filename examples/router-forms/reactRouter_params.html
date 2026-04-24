@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>React Router — URL params</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/react-router-dom@5.3.4/umd/react-router-dom.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 22px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; max-width: 640px; background: #fff; }
+        .users { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 6px; margin: 10px 0; }
+        .users a { display: block; text-align: center; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; text-decoration: none; color: #334155; background: #f8fafc; font-size: 14px; }
+        .users a:hover { background: #e2e8f0; }
+        .detail { padding: 16px; border-radius: 8px; background: #eff6ff; color: #1e40af; margin-top: 12px; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+        button { padding: 6px 10px; border: 1px solid #cbd5e1; background: #f1f5f9; border-radius: 6px; cursor: pointer; font: inherit; margin-top: 8px; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// Dynamic segments in the path (e.g. "/users/:id") become named params you
+// read with useParams(). useHistory gives you imperative navigation.
+
+const { HashRouter, Switch, Route, Link, useParams, useHistory } = ReactRouterDOM;
+
+const USERS = [
+    { id: "1", name: "Ada Lovelace",   role: "Mathematician" },
+    { id: "2", name: "Alan Turing",    role: "Logician" },
+    { id: "3", name: "Grace Hopper",   role: "Rear Admiral" },
+    { id: "4", name: "Dennis Ritchie", role: "Language designer" },
+];
+
+function UserList() {
+    return (
+        <div>
+            <h2>Users</h2>
+            <ul className="users">
+                {USERS.map((u) => (
+                    <li key={u.id}><Link to={`/users/${u.id}`}>{u.name.split(" ")[0]}</Link></li>
+                ))}
+            </ul>
+        </div>
+    );
+}
+
+function UserDetail() {
+    const { id } = useParams();
+    const history = useHistory();
+    const user = USERS.find((u) => u.id === id);
+
+    if (!user) {
+        return (
+            <div className="detail" style={{ background: "#fef2f2", color: "#b91c1c" }}>
+                <h3>No user with id "{id}".</h3>
+                <Link to="/users">← Back to list</Link>
+            </div>
+        );
+    }
+
+    return (
+        <div className="detail">
+            <h3>{user.name}</h3>
+            <p><em>{user.role}</em></p>
+            <p className="muted" style={{ color: "#1e40af" }}>URL param: <code>id = {id}</code></p>
+            <button onClick={() => history.push("/users")}>← Back to list</button>
+        </div>
+    );
+}
+
+function App() {
+    return (
+        <HashRouter>
+            <div className="card">
+                <h1>URL params with <code>useParams()</code></h1>
+                <Link to="/users">All users</Link>
+                <Switch>
+                    <Route exact path="/users"><UserList /></Route>
+                    <Route path="/users/:id"><UserDetail /></Route>
+                    <Route path="/"><UserList /></Route>
+                </Switch>
+                <p className="muted">
+                    The pattern <code>/users/:id</code> matches <code>/users/1</code>,
+                    <code>/users/42</code>, etc. The hook <code>useParams()</code> hands you
+                    back whichever value filled the <code>:id</code> slot.
+                </p>
+            </div>
+        </HashRouter>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Form submission — preventDefault</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; max-width: 520px; background: #fff; }
+        label { display: block; font-size: 13px; color: #475569; margin-top: 10px; }
+        input, textarea { width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font: inherit; margin-top: 4px; box-sizing: border-box; }
+        button { padding: 10px 18px; border: none; background: #0369a1; color: #fff; border-radius: 6px; cursor: pointer; font: inherit; font-weight: 600; margin-top: 14px; }
+        button:hover { background: #075985; }
+        .submissions { margin-top: 14px; border-top: 1px solid #e5e7eb; padding-top: 12px; }
+        .entry { padding: 10px 12px; border-radius: 8px; background: #f8fafc; margin-top: 6px; font-size: 13px; }
+        .entry strong { color: #0f172a; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// A <form> wants to POST and reload the page by default. In a React SPA
+// that wipes your state — so always call e.preventDefault() in onSubmit
+// and handle the data yourself.
+
+const { useState } = React;
+
+function App() {
+    const [form, setForm] = useState({ title: "", message: "" });
+    const [entries, setEntries] = useState([]);
+
+    const handleChange = (e) => setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
+
+    const handleSubmit = (e) => {
+        e.preventDefault();               // <-- crucial
+        if (!form.title.trim()) return;
+        setEntries((xs) => [{ ...form, at: new Date().toLocaleTimeString() }, ...xs]);
+        setForm({ title: "", message: "" });
+    };
+
+    return (
+        <div className="card">
+            <h1>Form submission with <code>preventDefault</code></h1>
+
+            <form onSubmit={handleSubmit}>
+                <label>Title
+                    <input name="title" value={form.title} onChange={handleChange} />
+                </label>
+                <label>Message
+                    <textarea name="message" rows="2" value={form.message} onChange={handleChange} />
+                </label>
+                <button type="submit">Save entry</button>
+            </form>
+
+            <div className="submissions">
+                <strong>{entries.length} entrie(s):</strong>
+                {entries.length === 0 && <p className="muted">Nothing yet — submit the form above.</p>}
+                {entries.map((en, i) => (
+                    <div key={i} className="entry">
+                        <strong>{en.title}</strong> — {en.message || <em>(no message)</em>} <span className="muted">· {en.at}</span>
+                    </div>
+                ))}
+            </div>
+
+            <p className="muted">
+                Without <code>e.preventDefault()</code> the browser would submit the
+                form over HTTP and reload the iframe, losing your list. Try it — comment
+                that line out in the source and resubmit.
+            </p>
+        </div>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

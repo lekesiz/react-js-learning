@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DIY hash router</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 22px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; max-width: 600px; background: #fff; }
+        nav a { padding: 6px 12px; margin-right: 6px; border-radius: 6px; text-decoration: none; color: #334155; border: 1px solid #cbd5e1; background: #f8fafc; font-size: 14px; display: inline-block; margin-bottom: 8px; }
+        nav a:hover { background: #e2e8f0; }
+        nav a.active { background: #0369a1; color: #fff; border-color: #0369a1; }
+        .view { padding: 20px; border-radius: 8px; background: #f8fafc; margin-top: 12px; min-height: 80px; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// A hash router in ~15 lines. Listens to `hashchange`, exposes the
+// current path, and re-renders consumers automatically. This is the
+// foundation React Router is built on — useful to see it once by hand.
+
+const { useState, useEffect } = React;
+
+function useHashRoute() {
+    const getPath = () => window.location.hash.replace(/^#/, "") || "/";
+    const [path, setPath] = useState(getPath);
+
+    useEffect(() => {
+        const onChange = () => setPath(getPath());
+        window.addEventListener("hashchange", onChange);
+        return () => window.removeEventListener("hashchange", onChange);
+    }, []);
+
+    return path;
+}
+
+function NavLink({ to, children }) {
+    const path = useHashRoute();
+    const active = path === to;
+    return <a href={"#" + to} className={active ? "active" : ""}>{children}</a>;
+}
+
+function Home()    { return <div><h2>Home</h2><p>The landing view.</p></div>; }
+function About()   { return <div><h2>About</h2><p>A few words about this tiny router.</p></div>; }
+function Contact() { return <div><h2>Contact</h2><p>Reach out — fictional page.</p></div>; }
+
+function App() {
+    const path = useHashRoute();
+
+    let view;
+    if (path === "/")             view = <Home />;
+    else if (path === "/about")   view = <About />;
+    else if (path === "/contact") view = <Contact />;
+    else                          view = <div><h2>404</h2><p>Nothing at <code>{path}</code>.</p></div>;
+
+    return (
+        <div className="card">
+            <h1>DIY hash router</h1>
+            <nav>
+                <NavLink to="/">Home</NavLink>
+                <NavLink to="/about">About</NavLink>
+                <NavLink to="/contact">Contact</NavLink>
+                <NavLink to="/nope">Broken link</NavLink>
+            </nav>
+            <div className="view">{view}</div>
+            <p className="muted">
+                Click a link — the URL hash changes, <code>hashchange</code> fires, the
+                hook re-renders, and the matching view appears. No library required.
+            </p>
+        </div>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

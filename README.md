@@ -13,6 +13,7 @@ Built from the original [echristof67/react_js](https://github.com/echristof67/re
 | 3 | JSX | components, props, lists, composition |
 | 4 | State | `useState`, class state, controlled inputs |
 | 5 | Hooks & Data | `useEffect`, `useContext`, custom hooks, `fetch` |
+| 6 | Router & Forms | React Router, controlled forms, validation, multi-step wizard |
 
 ## How it works
 
@@ -72,7 +73,8 @@ react-js-learning/
 │   ├── react-basics/          # Chapter 2 — 19 examples
 │   ├── react-jsx/             # Chapter 3 — 23 examples
 │   ├── react-state/           # Chapter 4 — 15 examples
-│   └── hooks-data/            # Chapter 5 — 11 examples
+│   ├── hooks-data/            # Chapter 5 — 11 examples
+│   └── router-forms/          # Chapter 6 — 10 examples
 ├── .github/workflows/pages.yml
 ├── .gitignore
 ├── LICENSE

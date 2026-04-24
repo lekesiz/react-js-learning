@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Form — multiple fields, one handler</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; max-width: 520px; background: #fff; }
+        label { display: block; font-size: 13px; color: #475569; margin-top: 10px; }
+        input, select, textarea { width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font: inherit; margin-top: 4px; box-sizing: border-box; font-family: inherit; }
+        .check { display: flex; align-items: center; gap: 6px; margin-top: 10px; font-size: 14px; }
+        .check input { width: auto; margin: 0; }
+        .echo { margin-top: 12px; padding: 10px 12px; border-radius: 8px; background: #0f172a; color: #a5f3fc; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; white-space: pre; overflow-x: auto; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// Ten fields don't need ten useState hooks. Put the whole form in one object
+// and write a single onChange handler keyed by the input's `name` attribute.
+
+const { useState } = React;
+
+function App() {
+    const [form, setForm] = useState({
+        name: "",
+        email: "",
+        role: "user",
+        bio: "",
+        subscribed: false,
+    });
+
+    // Generic handler: reads name + value (or checked) from the event target.
+    const handleChange = (e) => {
+        const { name, value, type, checked } = e.target;
+        setForm((prev) => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
+    };
+
+    return (
+        <div className="card">
+            <h1>One <code>onChange</code> for every field</h1>
+
+            <label>Name
+                <input name="name" value={form.name} onChange={handleChange} />
+            </label>
+            <label>Email
+                <input name="email" type="email" value={form.email} onChange={handleChange} />
+            </label>
+            <label>Role
+                <select name="role" value={form.role} onChange={handleChange}>
+                    <option value="user">User</option>
+                    <option value="editor">Editor</option>
+                    <option value="admin">Admin</option>
+                </select>
+            </label>
+            <label>Bio
+                <textarea name="bio" rows="2" value={form.bio} onChange={handleChange} />
+            </label>
+
+            <label className="check">
+                <input name="subscribed" type="checkbox" checked={form.subscribed} onChange={handleChange} />
+                Subscribe to the newsletter
+            </label>
+
+            <div className="echo">{JSON.stringify(form, null, 2)}</div>
+
+            <p className="muted">
+                The trick: give every input a matching <code>name</code>, then reuse
+                <code>[name]: value</code> to update the right slot. Checkboxes use
+                <code>checked</code> instead of <code>value</code> — the handler
+                branches on <code>type</code>.
+            </p>
+        </div>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

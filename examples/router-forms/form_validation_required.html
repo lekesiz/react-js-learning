@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Form validation — required fields</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; max-width: 520px; background: #fff; }
+        label { display: block; font-size: 13px; color: #475569; margin-top: 10px; }
+        input { width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font: inherit; margin-top: 4px; box-sizing: border-box; }
+        input.invalid { border-color: #dc2626; background: #fef2f2; }
+        .err { color: #dc2626; font-size: 12px; margin-top: 4px; }
+        button { padding: 10px 18px; border: none; background: #0369a1; color: #fff; border-radius: 6px; cursor: pointer; font: inherit; font-weight: 600; margin-top: 14px; }
+        button:disabled { background: #94a3b8; cursor: not-allowed; }
+        .ok { margin-top: 12px; padding: 10px 12px; border-radius: 8px; background: #ecfdf5; color: #166534; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// Validation strategy:
+//   - validate() returns { field: errorMessage | null }
+//   - show errors only for fields the user has touched (blurred)
+//   - disable submit while any field is invalid
+
+const { useState } = React;
+
+function validate(values) {
+    const errors = {};
+    if (!values.username.trim()) errors.username = "Username is required.";
+    else if (values.username.length < 3) errors.username = "Must be at least 3 characters.";
+
+    if (!values.password) errors.password = "Password is required.";
+    else if (values.password.length < 8) errors.password = "Must be at least 8 characters.";
+
+    return errors;
+}
+
+function App() {
+    const [values, setValues] = useState({ username: "", password: "" });
+    const [touched, setTouched] = useState({});
+    const [submitted, setSubmitted] = useState(null);
+
+    const errors = validate(values);
+    const isValid = Object.keys(errors).length === 0;
+
+    const handleChange = (e) => setValues((p) => ({ ...p, [e.target.name]: e.target.value }));
+    const handleBlur   = (e) => setTouched((p) => ({ ...p, [e.target.name]: true }));
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        setTouched({ username: true, password: true });
+        if (!isValid) return;
+        setSubmitted({ ...values, at: new Date().toLocaleTimeString() });
+        setValues({ username: "", password: "" });
+        setTouched({});
+    };
+
+    const show = (field) => (touched[field] || submitted) && errors[field];
+
+    return (
+        <div className="card">
+            <h1>Required-field validation</h1>
+
+            <form onSubmit={handleSubmit} noValidate>
+                <label>Username
+                    <input
+                        name="username" value={values.username}
+                        onChange={handleChange} onBlur={handleBlur}
+                        className={show("username") ? "invalid" : ""}
+                    />
+                    {show("username") && <div className="err">{errors.username}</div>}
+                </label>
+
+                <label>Password
+                    <input
+                        name="password" type="password" value={values.password}
+                        onChange={handleChange} onBlur={handleBlur}
+                        className={show("password") ? "invalid" : ""}
+                    />
+                    {show("password") && <div className="err">{errors.password}</div>}
+                </label>
+
+                <button type="submit" disabled={!isValid}>Sign up</button>
+            </form>
+
+            {submitted && (
+                <div className="ok">Submitted at {submitted.at} — welcome, <strong>{submitted.username}</strong>!</div>
+            )}
+
+            <p className="muted">
+                Errors stay hidden until a field is <em>touched</em> (focus + blur) or
+                submit is pressed. <strong>Try:</strong> focus a field and tab away
+                without typing.
+            </p>
+        </div>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

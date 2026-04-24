@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Controlled input — recap</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; max-width: 520px; background: #fff; }
+        label { display: block; font-size: 13px; color: #475569; margin-top: 10px; }
+        input { width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font: inherit; margin-top: 4px; box-sizing: border-box; }
+        .echo { margin-top: 12px; padding: 10px 12px; border-radius: 8px; background: #f8fafc; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 13px; color: #0f172a; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// A controlled input is one where React owns the value. Two wires:
+//   value={state}     — React tells the DOM what to show
+//   onChange={setter} — the DOM tells React about the keystroke
+
+const { useState } = React;
+
+function App() {
+    const [name, setName] = useState("");
+
+    return (
+        <div className="card">
+            <h1>Controlled input — one field, one piece of state</h1>
+
+            <label htmlFor="name">Your name</label>
+            <input id="name" value={name} onChange={(e) => setName(e.target.value)}
+                   placeholder="Type something…" />
+
+            <div className="echo">name = "{name}" (length: {name.length})</div>
+
+            <p className="muted">
+                Remove <code>value=...</code> and the input becomes uncontrolled — the
+                DOM owns the value again and React loses sync. Controlled is the
+                default in almost every real form.
+            </p>
+        </div>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

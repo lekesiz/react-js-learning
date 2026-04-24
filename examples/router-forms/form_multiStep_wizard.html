@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Multi-step form wizard</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 6px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; max-width: 560px; background: #fff; }
+        .steps { display: flex; gap: 8px; margin: 10px 0 16px; }
+        .step { flex: 1; text-align: center; padding: 8px 6px; border-radius: 999px; font-size: 12px; font-weight: 600; background: #f1f5f9; color: #64748b; border: 1px solid #e5e7eb; }
+        .step.active { background: #0369a1; color: #fff; border-color: #0369a1; }
+        .step.done { background: #d1fae5; color: #065f46; border-color: #6ee7b7; }
+        label { display: block; font-size: 13px; color: #475569; margin-top: 10px; }
+        input, select { width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font: inherit; margin-top: 4px; box-sizing: border-box; }
+        .actions { display: flex; justify-content: space-between; gap: 8px; margin-top: 16px; }
+        button { padding: 8px 18px; border: 1px solid #0369a1; background: #0369a1; color: #fff; border-radius: 6px; cursor: pointer; font: inherit; font-weight: 600; }
+        button.secondary { background: #fff; color: #0369a1; }
+        button:disabled { background: #94a3b8; border-color: #94a3b8; color: #fff; cursor: not-allowed; }
+        .summary { padding: 10px 12px; border-radius: 8px; background: #f8fafc; margin-top: 10px; font-size: 13px; }
+        .summary div { display: flex; justify-content: space-between; gap: 8px; padding: 2px 0; }
+        .done-card { padding: 16px; border-radius: 8px; background: #ecfdf5; color: #065f46; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// A wizard keeps ALL form state in one place; each step is a view that
+// reads+writes its slice. Next/Prev just change the step index.
+// Per-step validation gates the Next button.
+
+const { useState } = React;
+
+const STEP_TITLES = ["Account", "Profile", "Review"];
+
+function App() {
+    const [step, setStep] = useState(0);
+    const [data, setData] = useState({
+        email: "",
+        password: "",
+        firstName: "",
+        lastName: "",
+        country: "FR",
+    });
+    const [done, setDone] = useState(false);
+
+    const update = (patch) => setData((d) => ({ ...d, ...patch }));
+
+    // Per-step validation
+    const emailOk    = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(data.email);
+    const passwordOk = data.password.length >= 8;
+    const nameOk     = data.firstName.trim() && data.lastName.trim();
+    const canNext = step === 0 ? (emailOk && passwordOk) : step === 1 ? nameOk : true;
+
+    const next = () => { if (canNext) setStep((s) => Math.min(s + 1, STEP_TITLES.length - 1)); };
+    const prev = () => setStep((s) => Math.max(s - 1, 0));
+
+    const submit = () => setDone(true);
+
+    if (done) {
+        return (
+            <div className="card">
+                <div className="done-card">
+                    <h1>All set — welcome, {data.firstName}!</h1>
+                    <p>Your account <strong>{data.email}</strong> has been created (demo).</p>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="card">
+            <h1>Sign-up wizard</h1>
+            <div className="steps">
+                {STEP_TITLES.map((t, i) => (
+                    <div key={t} className={"step " + (i === step ? "active" : i < step ? "done" : "")}>
+                        {i + 1}. {t}
+                    </div>
+                ))}
+            </div>
+
+            {step === 0 && (
+                <div>
+                    <label>Email
+                        <input type="email" value={data.email}
+                               onChange={(e) => update({ email: e.target.value })} />
+                    </label>
+                    <label>Password <span className="muted">(min 8 chars)</span>
+                        <input type="password" value={data.password}
+                               onChange={(e) => update({ password: e.target.value })} />
+                    </label>
+                </div>
+            )}
+
+            {step === 1 && (
+                <div>
+                    <label>First name
+                        <input value={data.firstName}
+                               onChange={(e) => update({ firstName: e.target.value })} />
+                    </label>
+                    <label>Last name
+                        <input value={data.lastName}
+                               onChange={(e) => update({ lastName: e.target.value })} />
+                    </label>
+                    <label>Country
+                        <select value={data.country} onChange={(e) => update({ country: e.target.value })}>
+                            <option value="FR">France</option>
+                            <option value="TR">Türkiye</option>
+                            <option value="DE">Germany</option>
+                            <option value="US">United States</option>
+                        </select>
+                    </label>
+                </div>
+            )}
+
+            {step === 2 && (
+                <div className="summary">
+                    <div><span>Email</span><strong>{data.email}</strong></div>
+                    <div><span>Password</span><strong>{"•".repeat(data.password.length)}</strong></div>
+                    <div><span>First name</span><strong>{data.firstName}</strong></div>
+                    <div><span>Last name</span><strong>{data.lastName}</strong></div>
+                    <div><span>Country</span><strong>{data.country}</strong></div>
+                </div>
+            )}
+
+            <div className="actions">
+                <button className="secondary" onClick={prev} disabled={step === 0}>← Back</button>
+                {step < STEP_TITLES.length - 1
+                    ? <button onClick={next} disabled={!canNext}>Next →</button>
+                    : <button onClick={submit}>Create account</button>}
+            </div>
+
+            <p className="muted">One state object spans all steps; each step validates
+            just the fields it's responsible for.</p>
+        </div>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

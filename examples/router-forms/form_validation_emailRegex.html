@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Form validation — email regex + strength meter</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; max-width: 520px; background: #fff; }
+        label { display: block; font-size: 13px; color: #475569; margin-top: 10px; }
+        input { width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font: inherit; margin-top: 4px; box-sizing: border-box; }
+        input.invalid { border-color: #dc2626; background: #fef2f2; }
+        input.valid { border-color: #16a34a; }
+        .err { color: #dc2626; font-size: 12px; margin-top: 4px; }
+        .hint { color: #16a34a; font-size: 12px; margin-top: 4px; }
+        .meter { height: 6px; border-radius: 3px; background: #e5e7eb; margin-top: 6px; overflow: hidden; }
+        .meter-fill { height: 100%; transition: width 160ms ease, background-color 160ms ease; }
+        .strength-label { font-size: 12px; color: #475569; margin-top: 4px; }
+        button { padding: 10px 18px; border: none; background: #0369a1; color: #fff; border-radius: 6px; cursor: pointer; font: inherit; font-weight: 600; margin-top: 14px; }
+        button:disabled { background: #94a3b8; cursor: not-allowed; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// Real-time validation with a regex for email + a simple strength meter
+// for the password. Inputs visually flip invalid/valid while typing.
+
+const { useState, useMemo } = React;
+
+// A permissive-but-sensible email regex. For true RFC 5322 use a lib.
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+function passwordStrength(pw) {
+    let score = 0;
+    if (pw.length >= 8)   score += 1;
+    if (pw.length >= 12)  score += 1;
+    if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) score += 1;
+    if (/\d/.test(pw))    score += 1;
+    if (/[^A-Za-z0-9]/.test(pw)) score += 1;
+    return score; // 0..5
+}
+
+const STRENGTH = [
+    { label: "empty",       color: "#e5e7eb", width: 0 },
+    { label: "very weak",   color: "#dc2626", width: 20 },
+    { label: "weak",        color: "#f97316", width: 40 },
+    { label: "ok",          color: "#eab308", width: 60 },
+    { label: "good",        color: "#16a34a", width: 80 },
+    { label: "strong",      color: "#15803d", width: 100 },
+];
+
+function App() {
+    const [form, setForm] = useState({ email: "", password: "" });
+    const [touched, setTouched] = useState({});
+
+    const emailValid    = EMAIL_RE.test(form.email);
+    const strengthScore = useMemo(() => passwordStrength(form.password), [form.password]);
+    const strength      = STRENGTH[form.password.length === 0 ? 0 : strengthScore];
+    const isValid       = emailValid && strengthScore >= 3;
+
+    const change = (e) => setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
+    const blur   = (e) => setTouched((p) => ({ ...p, [e.target.name]: true }));
+
+    const submit = (e) => {
+        e.preventDefault();
+        if (!isValid) { setTouched({ email: true, password: true }); return; }
+        alert("Submitted: " + form.email);
+    };
+
+    const emailState = form.email === ""
+        ? "" : emailValid ? "valid" : (touched.email ? "invalid" : "");
+    const emailError = touched.email && form.email !== "" && !emailValid;
+
+    return (
+        <div className="card">
+            <h1>Email regex + password strength</h1>
+
+            <form onSubmit={submit} noValidate>
+                <label>Email
+                    <input name="email" value={form.email} onChange={change} onBlur={blur}
+                           className={emailState} placeholder="you@example.com" />
+                    {emailError && <div className="err">Please enter a valid email address.</div>}
+                    {emailValid && <div className="hint">Looks good.</div>}
+                </label>
+
+                <label>Password
+                    <input name="password" type="password" value={form.password}
+                           onChange={change} onBlur={blur} />
+                    <div className="meter">
+                        <div className="meter-fill" style={{ width: strength.width + "%", background: strength.color }} />
+                    </div>
+                    <div className="strength-label">Strength: {strength.label}</div>
+                    {touched.password && strengthScore < 3 && form.password.length > 0 && (
+                        <div className="err">Use at least 8 chars, mixing upper/lower case, a digit, and a symbol.</div>
+                    )}
+                </label>
+
+                <button type="submit" disabled={!isValid}>Create account</button>
+            </form>
+
+            <p className="muted">
+                Both validations are derived from state on every render — no
+                separate <code>isValid</code> in state. Keep validation a pure
+                function of the values and your form stays simple.
+            </p>
+        </div>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>
