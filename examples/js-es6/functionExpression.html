@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+<script>
+
+document.onreadystatechange = function () {
+  if (document.readyState == "complete") {
+    initApplication();
+  }
+};
+
+
+function initApplication(){
+    console.log("OK initApplication is running");
+}
+
+let teacher=function(lastname,firstname,subject='Front-End'){
+    console.log(`${lastname} ${firstname} teaches ${subject}`);
+}  
+
+teacher('Christoffel','Eric');
+teacher('Christoffel','Eric','Javascript');
+
+
+const numbers = [1, 2, 3];//Array
+numbers.forEach(function(num) {
+    console.log(num * 2); 
+});
+
+</script>
+</head>
+<body>
+    
+</body>
+</html>

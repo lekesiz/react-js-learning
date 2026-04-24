@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+<script>
+
+var userObject={lastname:"Christoffel",firstname:"Eric"};
+var {lastname,firstname}=userObject;
+console.log(userObject);
+console.log(lastname,firstname);
+
+var {lastname: userName}=userObject;
+console.log(userName);
+
+var {lastname,city="Strasbourg"}=userObject;
+console.log(lastname,city);
+
+var userJSON={"lastname":"Christoffel","firstname":"Eric"};
+var {lastname,firstname}=userJSON;
+console.log(userJSON);
+console.log(lastname,firstname);
+
+var lastname="Christoffel", firstname="Eric";
+var user={lastname,firstname,university:"Unistra"};
+console.log(user);
+
+var user={lastname:"Christoffel",firstname:"Eric"};
+var newUser={...user,university:"Unistra",city:"Strasbourg"}
+console.log(user,newUser);
+
+</script>
+</head>
+<body>
+    
+</body>
+</html>

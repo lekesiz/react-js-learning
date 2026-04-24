@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+<script>
+
+document.onreadystatechange = () => {
+  if (document.readyState == "complete") {
+    initApplication();
+  }
+};
+
+
+function initApplication(){
+    console.log("Ok");
+}
+
+
+const email=(prefix,domain,topLevelDomain="fr")=>{
+    return `${prefix}@${domain}.${topLevelDomain}`;
+}
+
+console.log(email('christof','unistra'));
+
+const undergraduateProgram=specialization=>`BSc. ${specialization}`;
+
+console.log(undergraduateProgram('Computer Science'));
+
+
+</script>
+</head>
+<body>
+    
+</body>
+</html>

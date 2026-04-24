@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>React JSX Example</title>
+<!-- React and ReactDOM (Version 17 for compatibility) -->
+<script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+<!-- Babel for JSX transformation -->
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+    button {margin:5px;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+class Button extends React.Component {
+    constructor(props){
+        super(props);   
+    }    
+    render(){
+        return (
+            <button type="button" onClick={this.props.onClickHandler}>{this.props.label}</button>
+        )
+    }
+}
+//Class Counter
+class Counter extends React.Component {
+    constructor(props){
+        super(props);
+    }
+    render(){
+       return <span>{this.props.value}</span>
+    }
+}
+//Parent Class : App
+class App extends React.Component {
+    constructor(props){
+        super(props);
+        this.state={counter:0};
+        this.increase = this.increase.bind(this);                      
+    } 
+    increase(){
+        this.setState(prevState => ({ counter: prevState.counter + 1 }));        
+    }
+    render(){
+       return (
+        <React.Fragment>
+        <Button label="Increase" onClickHandler={this.increase}/>
+        <Counter value={this.state.counter} />
+        </React.Fragment>
+       ) 
+    }
+} 
+
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

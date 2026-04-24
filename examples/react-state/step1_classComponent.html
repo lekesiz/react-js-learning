@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>React JSX Example</title>
+<!-- React and ReactDOM (Version 17 for compatibility) -->
+<script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+<!-- Babel for JSX transformation -->
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+    button {margin:5px;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+//Child Class Component Button
+class Button extends React.Component {
+    constructor(props){
+        super(props);
+    console.log(`this.props.label : 
+    ${this.props.label}`);  
+    }    
+    render(){
+        return (
+            <button type="button">{this.props.label}</button>
+        )
+    }
+}
+//Child Class Component Counter
+class Counter extends React.Component {
+    constructor(props){
+        super(props);
+        console.log(`this.props.value 
+        ${this.props.value}`);        
+    }
+    render(){
+       return (
+        <span>{this.props.value}</span>
+       ) 
+    }
+}
+//Parent Class Component : App
+class App extends React.Component {
+    constructor(props){
+        super(props);
+    }
+    render(){
+       return (
+        <React.Fragment>
+        <Button label="Increase" />
+        <Counter value="0" />
+        </React.Fragment>
+       ) 
+    }
+} 
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

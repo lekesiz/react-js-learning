@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>React JSX Example</title>
+<!-- React and ReactDOM (Version 17 for compatibility) -->
+<script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+<!-- Babel for JSX transformation -->
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+/* Style by ID */
+#profile-card {
+  width: 300px;
+  border: 2px solid #4A90E2;
+  padding: 20px;
+  border-radius: 12px;
+  text-align: center;
+}
+
+/* Style by class */
+.card-container-img {
+  width: 100px;
+  border-radius: 50%;
+}
+
+.role {
+  color: #555;
+  font-style: italic;
+}
+
+.contact-button {
+  margin-top: 10px;
+  padding: 8px 16px;
+  background-color: #4A90E2;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.contact-button:hover {
+  background-color: #357ABD;
+}
+ul li {text-align: left;}
+</style>
+</head>
+<body>
+    <div id="root"></div>
+
+<script type="text/babel">
+const subjects = ["Front-End", "Back-End", "JavaScript", "Database"];
+
+// Fonction qui retourne un élément JSX pour la liste des matières enseignées
+const SubjectsList=function () {
+  return (
+    <ul>
+      {subjects.map((item, index) => (
+        <li key={index}>{item}</li>
+      ))}
+    </ul>
+  );
+}
+
+// Style pour le titre
+const titleStyle = {
+  color: "white",
+  backgroundColor: "#4A90E2",
+  padding: "10px",
+  borderRadius: "8px"
+};
+
+// Création du User Profile Card
+const userProfile = (
+  <div id="profile-card">
+    <img src="user.png" className="card-container-img" />
+    <h2 style={titleStyle}>Eric Christoffel</h2>
+    <p className="role" style={{ textDecoration: "underline" }}>Teacher</p>
+    
+    {/* Ajout de la liste des matières enseignées */}
+    <SubjectsList />
+
+    <button className="contact-button">Contact</button>
+  </div>
+);
+
+// Rendu dans le DOM
+ReactDOM.render(userProfile, document.getElementById("root"));
+
+</script>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+<script>
+//destructuring
+var user=["Christoffel","Eric","Unistra"];
+var [lastname,firstname,university]=user;
+console.log(user);
+console.log(lastname,firstname,university);
+
+var user=["Christoffel","Eric","Unistra"];
+lastname=null;
+var [,firstname,university]=user;
+console.log(lastname,firstname,university);
+
+var [lastname,...others]=user;
+console.log(lastname,others);
+
+//structuring
+var user=["Christoffel","Eric"];
+var copy=[...user];
+console.log(user,copy);
+
+var user=["Christoffel","Eric"];
+var university=['Unistra',"Strasbourg"];
+var teacher=[...user,...university];
+console.log(teacher);
+
+var [lastname,...others]=teacher;
+console.log(lastname,others);
+
+
+
+</script>
+
+</head>
+<body>
+    
+</body>
+</html>

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+<script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+
+// Main App Component
+function App(props) {
+  // useState() is a React Hook that lets you add state to functional components.
+  // It takes an initial value as argument (here: 0).
+  // It returns an array with two elements:
+  // - The current state value.
+  // - A function to update that value.
+  // Naming convention: [something, setSomething]
+  // We initialize the state to store the current value of the input field.
+  const [inputValue, setInputValue] = React.useState(0);
+
+  // Function to handle any change in the input field.
+  // This is an arrow function assigned to a constant named handleInputOnChange.
+  // It receives the event object triggered by the user's action.
+  // event.target refers to the input DOM element.
+  // event.target.value gives the real-time value typed by the user.
+  // We call the state updater function (setInputValue) to store this value in React's state.
+  const handleInputOnChange = (event) => {
+    console.log(event, event.target, event.target.value);
+    setInputValue(event.target.value);
+  };
+
+  // JSX rendering
+  // We pass custom props to the child component:
+  // - label: a string to be displayed as label for the input
+  // - value: the current value stored in React's state
+  // - handleInput: the function to handle input changes (triggered on onChange)
+  return (
+    <InputField label="Data" value={inputValue} handleInput={handleInputOnChange} />
+  );
+}
+// End of App component
+
+// InputField Component
+// The component receives props from its parent.
+// The props are accessed via props.<name> (e.g., props.label, props.value).
+// Note: the onChange event is triggered by React, not by the browser directly (not HTML's native onchange).
+function InputField(props) {
+    {console.log(props)}
+  return (
+    <label>
+      <input
+        type="number"
+        id={props.label}
+        value={props.value}
+        onChange={props.handleInput}
+      />
+    </label>
+  );
+}
+// End of InputField Component
+
+// Render the main App component into the HTML element with id="root"
+ReactDOM.render(<App />, document.getElementById('root'));
+
+</script>    
+</body>
+</html>

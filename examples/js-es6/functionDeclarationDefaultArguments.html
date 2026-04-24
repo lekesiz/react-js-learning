@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+<script>
+//default arguments are used
+teaching("Christoffel","Eric");
+//default arguments are not used
+teaching("Christoffel","Eric","Database","S2");
+//last default argument is used
+teaching("Christoffel","Eric","Back-End");
+//use undefined if 1st défault argument is used, but not the next one
+teaching("Christoffel","Eric",undefined,"S2");
+//null or "" are considered as values
+teaching("Christoffel","Eric",null,"S2");
+teaching("Christoffel","Eric","","S2");
+
+function teaching(lastname, firstname, subject="Front-End", semester="S1"){
+console.log(`Last Name ${lastname}, First Name ${firstname} , Subject taught : ${subject} during Semester ${semester}`);    
+}
+</script>
+</head>
+<body>
+    
+</body>
+</html>

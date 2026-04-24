@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+<script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+
+// App main Component as a class
+class App extends React.Component {
+  constructor(props) {
+    super(props);
+
+    // The state is initialized in the constructor using this.state
+    // inputValue will hold the current value of the input field
+    this.state = {
+      inputValue: 0
+    };
+
+    // Binding the event handler to the class instance
+    // This ensures 'this' refers to the component in the method
+    this.handleInputOnChange = this.handleInputOnChange.bind(this);
+  }
+
+  // Event handler function for input field changes
+  // It receives the event object as a parameter
+  // The target is the input field, and .value gives the current input
+  // this.setState() is used to update the state with the new value
+  handleInputOnChange(event) {
+    console.log(event, event.target, event.target.value);
+    this.setState({ inputValue: event.target.value });
+  }
+
+  // JSX render method
+  // The state and the handler are passed as props to the child component
+  render() {
+    return (
+      <InputField
+        label="Data"
+        value={this.state.inputValue}
+        handleInput={this.handleInputOnChange}
+      />
+    );
+  }
+}
+
+// InputField Component as a class
+class InputField extends React.Component {
+  render() {
+    return (
+      <label>
+        {/* The value is received from props and set in the input field */}
+        {/* onChange triggers the function passed in props */}
+        <input
+          type="number"
+          id={this.props.label}
+          value={this.props.value}
+          onChange={this.props.handleInput}
+        />
+        {console.log(this.props.value)}
+      </label>
+    );
+  }
+}
+
+
+// Render the main App component into the HTML element with id="root"
+ReactDOM.render(<App />, document.getElementById('root'));
+
+</script>    
+</body>
+</html>

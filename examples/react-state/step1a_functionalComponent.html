@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>React JSX Example</title>
+<!-- React and ReactDOM (Version 17 for compatibility) -->
+<script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+<!-- Babel for JSX transformation -->
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+    button {margin:5px;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+//Button functional component
+const Button=function(props){
+    console.log(`props.label ${props.label}`);  
+    return (
+            <button type="button">{props.label}</button>
+        )   
+}
+
+//Counter functional component
+const Counter=function(props){
+    console.log(`props.value ${props.value}`); 
+    props.value=1;
+    return (
+       <span>{props.value}</span> 
+    )
+}
+
+//Parent component : App
+const App=function(){
+    return (
+        <React.Fragment>
+        <Button label="Increase" />
+        <Counter value="0" />
+        </React.Fragment> 
+    )    
+}
+
+
+
+// Rendering the JSX element into the "root" container
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

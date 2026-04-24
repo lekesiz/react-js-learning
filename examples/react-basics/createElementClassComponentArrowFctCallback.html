@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+
+<script src="https://unpkg.com/react@17/umd/react.development.js" crossorigin></script> 
+<script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js" crossorigin></script>
+
+</head>
+<body>
+
+<div id="app"></div>
+
+<script>
+
+var items = ["Front-End","Back-End","Database","React JS"];
+
+class ListElements extends React.Component {  
+    constructor(props) {    
+        super(props);  
+    }  
+    render() {    
+        return React.createElement("ul", null,      
+          this.props.items.map((item, index) => {       
+           return React.createElement("li", { key : index, style : this.props.style }, item);   
+          })    
+        );  
+    }
+} 
+
+var list = React.createElement(ListElements, { items : items, style : {color:"red"} });
+ReactDOM.render(list, document.getElementById("app"));
+
+</script>
+</body>
+</html>

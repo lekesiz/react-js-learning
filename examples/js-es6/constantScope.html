@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+<script>
+const user={"lastname":"Christoffel","firstname":"Eric","university":null};
+user.university="Unistra";//allowed
+user.status="Maître de Conférences";//allowed
+console.log(user);
+
+for(const property in user){
+console.log("Property : "+property+" , Value : "+user[property]);    
+}
+console.log("Last value of property const : "+property);//ReferenceError: property is not defined
+
+</script>
+</head>
+<body>
+    
+</body>
+</html>

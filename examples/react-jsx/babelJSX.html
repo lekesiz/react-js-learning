@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>React JSX Example</title>
+<!-- React and ReactDOM (Version 17 for compatibility) -->
+<script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+<!-- Babel for JSX transformation -->
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // Creating a JSX element
+        const element = <p id="intro">Hello React JSX</p>;
+
+        // Rendering the JSX element into the "root" container
+        ReactDOM.render(element, document.getElementById("root"));
+    </script>
+</body>
+</html>

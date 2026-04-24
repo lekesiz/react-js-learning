@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>React JSX Example</title>
+<!-- React and ReactDOM (Version 17 for compatibility) -->
+<script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+<!-- Babel for JSX transformation -->
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+    button {margin:5px;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+    const { useState } = React;
+
+//Button functional component
+const Button=function(props){
+    console.log(props.onClickHandler);
+    return (
+            <button type="button" 
+            onClick={props.onClickHandler}>
+            {props.label}</button>
+        )   
+}
+
+//Counter functional component
+const Counter=function(props){
+console.log(props);
+        return (
+       <span>{props.value}</span> 
+    )
+}
+
+//Parent component : App
+const App=function(){
+    const [counter, setCounter] = useState(0);
+    const increase = () =>  {
+        setCounter(prev => prev+1)
+    };
+    return (
+        <React.Fragment>
+        <Button label="Increase" 
+        onClickHandler={increase} />
+        <Counter value={counter} />
+        </React.Fragment> 
+    )    
+}
+
+
+
+// Rendering the JSX element into the "root" container
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

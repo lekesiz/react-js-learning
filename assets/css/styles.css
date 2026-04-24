@@ -1,0 +1,149 @@
+/* ---------------------------------------------------------------
+   React & Modern JS — custom styles (on top of Tailwind CDN)
+   --------------------------------------------------------------- */
+
+:root {
+  --radius-card: 0.9rem;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Prism override: match dark / light tastefully ---------------- */
+pre[class*="language-"] {
+  margin: 0;
+  padding: 1rem 1.25rem;
+  border-radius: 0.75rem;
+  font-size: 0.85rem;
+  line-height: 1.55;
+  background: #0f172a;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+html:not(.dark) pre[class*="language-"] {
+  background: #0f172a; /* keep code dark even in light mode for readability */
+}
+
+code[class*="language-"],
+pre[class*="language-"] {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  text-shadow: none;
+}
+
+/* Card -------------------------------------------------------- */
+.card {
+  border-radius: var(--radius-card);
+  border: 1px solid rgb(226 232 240);
+  background: #fff;
+  transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+}
+.dark .card {
+  border-color: rgb(30 41 59);
+  background: rgb(15 23 42 / 0.7);
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -12px rgba(2, 132, 199, 0.35);
+  border-color: rgb(6 164 239 / 0.5);
+}
+
+/* Hero gradient ----------------------------------------------- */
+.hero-gradient {
+  background:
+    radial-gradient(1200px 400px at 50% -150px, rgba(6, 164, 239, 0.25), transparent 60%),
+    radial-gradient(800px 300px at 80% 100%, rgba(139, 92, 246, 0.15), transparent 60%);
+}
+
+/* Prose niceties ---------------------------------------------- */
+.prose-tight p { margin: 0.5rem 0; }
+.prose-tight :where(code):not(pre code) {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.85em;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.375rem;
+  background: rgba(15, 23, 42, 0.08);
+  color: rgb(2 132 199);
+}
+.dark .prose-tight :where(code):not(pre code) {
+  background: rgba(148, 163, 184, 0.12);
+  color: rgb(56 189 248);
+}
+
+/* Chapter number badge ---------------------------------------- */
+.chapter-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  height: 2rem;
+  padding: 0 0.6rem;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: rgb(219 234 254);
+  color: rgb(30 64 175);
+}
+.dark .chapter-badge {
+  background: rgba(59, 130, 246, 0.15);
+  color: rgb(147 197 253);
+}
+
+/* Example viewer split ---------------------------------------- */
+.viewer-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 1024px) {
+  .viewer-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+/* Preview iframe ---------------------------------------------- */
+.preview-frame {
+  width: 100%;
+  min-height: 380px;
+  border: 1px solid rgb(226 232 240);
+  border-radius: 0.75rem;
+  background: white;
+}
+.dark .preview-frame {
+  border-color: rgb(30 41 59);
+  /* keep white inside iframe since the example pages assume it */
+}
+
+/* Concept tag -------------------------------------------------- */
+.concept-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  background: rgb(241 245 249);
+  color: rgb(51 65 85);
+  border: 1px solid rgb(226 232 240);
+}
+.dark .concept-tag {
+  background: rgba(30, 41, 59, 0.5);
+  color: rgb(203 213 225);
+  border-color: rgb(51 65 85);
+}
+
+/* Subtle nav link ---------------------------------------------- */
+.nav-link {
+  padding: 0.4rem 0.75rem;
+  border-radius: 0.5rem;
+  color: rgb(71 85 105);
+  font-weight: 500;
+  transition: background 120ms ease, color 120ms ease;
+}
+.nav-link:hover { background: rgb(241 245 249); color: rgb(15 23 42); }
+.dark .nav-link { color: rgb(203 213 225); }
+.dark .nav-link:hover { background: rgb(30 41 59); color: rgb(241 245 249); }
+.nav-link.active { background: rgb(6 164 239 / 0.1); color: rgb(6 132 204); }
+.dark .nav-link.active { background: rgb(6 164 239 / 0.15); color: rgb(125 211 252); }

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+<style>
+button {display:block;width:100;text-align: center;margin:5px 10px;}    
+</style>
+</head>
+<body>
+<h1>let vs var</h1>
+<section id="section1">
+<h2>let case</h2>
+
+</section> 
+<script>
+for(let i=1;i<=4;i++){
+var button=`<button>Button ${i}</button>`;   
+document.getElementById("section1").insertAdjacentHTML("beforeend",button);
+//let : local scope in a block, each button receives a separate copy of variable i
+var theButton=document.querySelector("#section1 button:last-child");
+theButton.onclick=function(){console.log(`Button ${i} clicked! `)}
+//lastButton.onclick=() => {console.log(`Button ${i} clicked! `)}
+}   
+</script>  
+
+<section id="section2">
+<h2>var case</h2>
+
+</section> 
+<script>
+for(var i=1;i<=4;i++){
+var button=`<button>Button ${i}</button>`; 
+//var : still a global scope in a block, the onclick event is attached to a button, capturing the reference to variable i, not its value 
+document.getElementById("section2").insertAdjacentHTML("beforeend",button);
+var theButton=document.querySelector("#section2 button:last-child");
+theButton.onclick=function(){console.log(`Button ${i} clicked! `)}
+}   
+</script> 
+</body>
+</html>

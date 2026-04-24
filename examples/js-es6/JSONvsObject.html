@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+<script>
+//JSON data
+const contactJSON={
+    "lastname":"Christoffel",
+    "firstname":"Eric"
+};
+console.log(contactJSON);
+
+//Object
+/*
+const contactObject={
+    lastname:"Christoffel",
+    firstname:"Eric",
+    fullname:function(){
+        console.log(`Fullname : ${this.lastname} ${this.firstname}`);
+    }
+};
+contactObject.fullname();
+*/
+
+/*
+const contactObject={
+    lastname:"Christoffel",
+    firstname:"Eric",
+    fullname(){
+        console.log(`Fullname : ${this.lastname} ${this.firstname}`);
+    }
+};
+contactObject.fullname();
+*/
+
+//necer use an arrow function for the method
+const contactObject={
+    lastname:"Christoffel",
+    firstname:"Eric",
+    fullname:() => console.log(`Fullname : ${this.lastname} ${this.firstname}`)
+};
+contactObject.fullname();
+//Object
+/*
+const contactObject={
+    lastname:"Christoffel",
+    firstname:"Eric",
+    subjects:["Front-End","Back-End","Database"],
+    taughtSubjects: function() {
+        this.subjects.forEach((subject,index) => console.log(`Subject N${index} ${subject}`))
+    }
+};
+
+contactObject.taughtSubjects();
+*/
+
+</script>
+</head>
+<body>
+    
+</body>
+</html>
