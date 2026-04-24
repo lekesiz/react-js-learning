@@ -609,6 +609,106 @@ window.CHAPTERS = [
       },
     ],
   },
+
+  {
+    id: "hooks-data",
+    number: 5,
+    title: "Hooks & Data — useEffect, Context, Custom Hooks, fetch",
+    tagline: "Side effects, shared state, and talking to an API.",
+    description:
+      "Past state, real apps need to react to the outside world: timers, subscriptions, APIs, and shared values like the current user or theme. This chapter covers the four pillars most React apps rely on — useEffect for side effects, useContext for tree-wide state, custom hooks to package reusable logic, and fetch patterns with loading / error / debounce.",
+    icon: "zap",
+    examples: [
+      {
+        slug: "useeffect-on-mount",
+        file: "useEffect_onMount.html",
+        title: "useEffect — run once on mount",
+        description:
+          "Use `useEffect(fn, [])` to run setup code exactly once, right after the first render.",
+        concepts: ["useEffect", "mount", "empty deps"],
+      },
+      {
+        slug: "useeffect-dependencies",
+        file: "useEffect_dependencies.html",
+        title: "useEffect — dependencies & `document.title`",
+        description:
+          "Pass `[count]` to re-run the effect every time the count changes. Live-syncs the tab title.",
+        concepts: ["useEffect", "dependencies", "document.title"],
+      },
+      {
+        slug: "useeffect-cleanup-interval",
+        file: "useEffect_cleanup_interval.html",
+        title: "useEffect — cleanup with `setInterval`",
+        description:
+          "Return a cleanup function from the effect so React can tear timers / subscriptions down on unmount.",
+        concepts: ["useEffect", "cleanup", "setInterval"],
+      },
+      {
+        slug: "useeffect-event-listener",
+        file: "useEffect_eventListener.html",
+        title: "useEffect — event listener cleanup",
+        description:
+          "Attach a global `mousemove` listener on mount and remove it on unmount — live mouse tracker.",
+        concepts: ["useEffect", "event listener", "cleanup"],
+      },
+      {
+        slug: "usecontext-theme-toggle",
+        file: "useContext_themeToggle.html",
+        title: "useContext — theme provider & toggle",
+        description:
+          "Thread a `theme` value through the tree without prop-drilling. One provider, many consumers.",
+        concepts: ["useContext", "createContext", "provider"],
+      },
+      {
+        slug: "usecontext-nested-user",
+        file: "useContext_nestedUser.html",
+        title: "useContext — deeply nested user info",
+        description:
+          "Switch the logged-in user at the top; a deeply nested Avatar component updates instantly.",
+        concepts: ["useContext", "nesting", "shared state"],
+      },
+      {
+        slug: "custom-hook-use-toggle",
+        file: "customHook_useToggle.html",
+        title: "Custom hook — `useToggle`",
+        description:
+          "Package a boolean + toggle helper into a reusable `useToggle()` hook — your first custom hook.",
+        concepts: ["custom hook", "useToggle", "useCallback"],
+      },
+      {
+        slug: "custom-hook-use-window-size",
+        file: "customHook_useWindowSize.html",
+        title: "Custom hook — `useWindowSize`",
+        description:
+          "A hook that bundles a `resize` listener with state: components get live window dimensions without wiring.",
+        concepts: ["custom hook", "useEffect", "resize"],
+      },
+      {
+        slug: "custom-hook-use-local-storage",
+        file: "customHook_useLocalStorage.html",
+        title: "Custom hook — `useLocalStorage`",
+        description:
+          "`useState` that persists across reloads by syncing through `localStorage` with lazy initial read.",
+        concepts: ["custom hook", "localStorage", "persistence"],
+      },
+      {
+        slug: "fetch-posts-list",
+        file: "fetch_postsList.html",
+        title: "fetch — loading / error / data states",
+        description:
+          "The canonical three-state data fetch: show a spinner, an error, or the data. With a cancellation flag for unmounts.",
+        concepts: ["fetch", "useEffect", "async state"],
+      },
+      {
+        slug: "fetch-debounced-search",
+        file: "fetch_debouncedSearch.html",
+        title: "fetch — debounced search with `AbortController`",
+        description:
+          "A typing-as-you-go search box that debounces 300 ms and cancels stale in-flight requests.",
+        concepts: ["fetch", "debounce", "AbortController"],
+      },
+    ],
+  },
 ];
 
 // Flat list for search / next-prev navigation

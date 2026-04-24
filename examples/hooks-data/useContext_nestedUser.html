@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>useContext — nested user info</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; max-width: 520px; background: #fff; margin-bottom: 10px; }
+        .level { padding-left: 16px; border-left: 3px solid #e5e7eb; margin-top: 10px; }
+        .user { display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 999px; background: #eff6ff; color: #1d4ed8; font-weight: 600; font-size: 13px; }
+        button { padding: 6px 10px; border: 1px solid #cbd5e1; background: #f1f5f9; border-radius: 6px; cursor: pointer; font: inherit; margin-right: 6px; }
+        button:hover { background: #e2e8f0; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 8px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// Context is read from the *closest* Provider above the consumer. That makes
+// it easy to scope values per subtree — different <UserContext.Provider>s
+// give different children different users, with no prop-drilling.
+
+const { useState, useContext, createContext } = React;
+
+const UserContext = createContext({ name: "Anonymous", role: "guest" });
+
+function Avatar() {
+    const { name, role } = useContext(UserContext);
+    const initials = name.split(" ").map((s) => s[0]).join("").slice(0, 2).toUpperCase();
+    return <span className="user">{initials} · {name} ({role})</span>;
+}
+
+function Sidebar() {
+    return (
+        <div className="card">
+            <strong>Sidebar</strong>
+            <p className="muted">Deep-nested <code>Avatar</code> reads user from context:</p>
+            <div className="level"><Avatar /></div>
+        </div>
+    );
+}
+
+function Layout({ children }) {
+    return <div className="card"><strong>Layout</strong>{children}</div>;
+}
+
+function App() {
+    const [user, setUser] = useState({ name: "Mikail L.", role: "learner" });
+
+    return (
+        <div>
+            <h1>Nested user context</h1>
+            <div>
+                <button onClick={() => setUser({ name: "Marc T.", role: "teacher" })}>Log in as teacher</button>
+                <button onClick={() => setUser({ name: "Mikail L.", role: "learner" })}>Log in as learner</button>
+                <button onClick={() => setUser({ name: "Anonymous", role: "guest" })}>Sign out</button>
+            </div>
+            <div style={{ height: 12 }} />
+            <UserContext.Provider value={user}>
+                <Layout>
+                    <div className="level">
+                        <Sidebar />
+                    </div>
+                </Layout>
+            </UserContext.Provider>
+            <p className="muted">
+                Try swapping the user — the <code>Avatar</code> deep inside the tree
+                updates instantly, because context change re-renders all consumers.
+            </p>
+        </div>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

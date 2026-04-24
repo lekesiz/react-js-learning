@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>useEffect — cleanup with setInterval</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; max-width: 520px; background: #fff; }
+        button { padding: 8px 14px; border: 1px solid #cbd5e1; background: #f1f5f9; border-radius: 6px; cursor: pointer; font: inherit; }
+        button:hover { background: #e2e8f0; }
+        .time { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 28px; font-weight: 600; color: #0f172a; margin: 10px 0; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 8px; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// When an effect subscribes to something (a timer, a listener, a socket),
+// it must return a cleanup function so React can tear the subscription
+// down on unmount or before re-running the effect. Otherwise: leaks.
+
+const { useState, useEffect } = React;
+
+function Clock() {
+    const [time, setTime] = useState(() => new Date());
+
+    useEffect(() => {
+        const id = setInterval(() => setTime(new Date()), 1000);
+        return () => clearInterval(id); // <-- cleanup
+    }, []);
+
+    return <div className="time">{time.toLocaleTimeString()}</div>;
+}
+
+function App() {
+    const [show, setShow] = useState(true);
+    return (
+        <div className="card">
+            <h1>Clock with setInterval cleanup</h1>
+            {show ? <Clock /> : <p className="muted">(Clock unmounted — interval cleared.)</p>}
+            <button onClick={() => setShow((v) => !v)}>
+                {show ? "Unmount clock" : "Remount clock"}
+            </button>
+            <p className="muted">
+                Unmount the clock and the interval stops firing — that's the cleanup
+                function at work. Without it, the interval would keep updating a
+                component that no longer exists.
+            </p>
+        </div>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

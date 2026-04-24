@@ -43,6 +43,7 @@
     atom: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-6 w-6"><circle cx="12" cy="12" r="1"/><ellipse cx="12" cy="12" rx="10" ry="4"/><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(120 12 12)"/></svg>`,
     code: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-6 w-6"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/><line x1="13" y1="4" x2="11" y2="20"/></svg>`,
     sparkles: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-6 w-6"><path d="M12 3l1.8 4.6L18 9.4l-4.2 1.8L12 15.8 10.2 11.2 6 9.4l4.2-1.8L12 3z"/><path d="M5 17l.9 2.1L8 20l-2.1.9L5 23l-.9-2.1L2 20l2.1-.9L5 17z"/><path d="M19 14l.9 2.1L22 17l-2.1.9L19 20l-.9-2.1L16 17l2.1-.9L19 14z"/></svg>`,
+    zap: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-6 w-6"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`,
   };
 
   // ----- theme toggle ------------------------------------------
@@ -125,7 +126,7 @@
           h("span", { class: "bg-gradient-to-r from-brand-500 via-sky-500 to-violet-500 bg-clip-text text-transparent" }, "by example."),
         ),
         h("p", { class: "mx-auto mt-6 max-w-2xl text-lg text-slate-600 dark:text-slate-300" },
-          "A progressive, example-driven course. Every lesson is a single runnable page — open the source, tweak it, re-run it. From ES6 fundamentals to React state, in four short chapters."
+          `A progressive, example-driven course. Every lesson is a single runnable page — open the source, tweak it, re-run it. From ES6 fundamentals to hooks and data fetching, in ${CHAPTERS.length} short chapters.`
         ),
         h("div", { class: "mt-8 flex flex-wrap items-center justify-center gap-3" },
           h("a", { href: "#/chapter/js-es6", class: "inline-flex items-center gap-2 rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-brand-600/20 hover:bg-brand-700" },
@@ -139,7 +140,7 @@
         // Stats
         h("div", { class: "mx-auto mt-10 grid max-w-xl grid-cols-3 gap-4 text-left sm:gap-6" },
           ...[
-            ["4", "Chapters"],
+            [`${CHAPTERS.length}`, "Chapters"],
             [`${ALL_EXAMPLES.length}`, "Hands-on examples"],
             ["0", "Build steps"],
           ].map(([n, l]) =>

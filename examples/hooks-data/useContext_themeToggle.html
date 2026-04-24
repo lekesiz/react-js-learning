@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>useContext — theme toggle</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 0; min-height: 260px; transition: background 0.2s, color 0.2s; }
+        body[data-theme="dark"] { background: #0f172a; color: #e2e8f0; }
+        body[data-theme="light"] { background: #ffffff; color: #1f2937; }
+        .wrap { padding: 24px; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .panel { border-radius: 10px; padding: 16px; max-width: 520px; border: 1px solid currentColor; opacity: 0.95; }
+        button { padding: 8px 14px; border: 1px solid currentColor; background: transparent; color: inherit; border-radius: 6px; cursor: pointer; font: inherit; }
+        button:hover { opacity: 0.85; }
+        .muted { font-size: 13px; opacity: 0.7; margin-top: 10px; }
+        code { padding: 2px 6px; border-radius: 4px; background: rgba(127,127,127,0.15); font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// Context lets you thread a value through the tree without passing props at
+// every level. Here a single ThemeContext tells deeply nested children which
+// palette to use.
+
+const { useState, useContext, createContext, useEffect } = React;
+
+const ThemeContext = createContext("light");
+
+function ThemedPanel() {
+    const theme = useContext(ThemeContext);
+    return (
+        <div className="panel">
+            <h1>Current theme: {theme}</h1>
+            <p className="muted">
+                This component never received a <code>theme</code> prop — it pulled it
+                from context directly with <code>useContext(ThemeContext)</code>.
+            </p>
+        </div>
+    );
+}
+
+function ThemeToggle() {
+    const theme = useContext(ThemeContext);
+    return <span className="muted">Theme is "{theme}"</span>;
+}
+
+function App() {
+    const [theme, setTheme] = useState("light");
+
+    // Sync <body data-theme="..."> so the CSS transitions kick in
+    useEffect(() => { document.body.dataset.theme = theme; }, [theme]);
+
+    return (
+        <ThemeContext.Provider value={theme}>
+            <div className="wrap">
+                <button onClick={() => setTheme((t) => (t === "light" ? "dark" : "light"))}>
+                    Toggle theme
+                </button>
+                <div style={{ height: 12 }} />
+                <ThemedPanel />
+                <p className="muted">Aside: <ThemeToggle /></p>
+            </div>
+        </ThemeContext.Provider>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

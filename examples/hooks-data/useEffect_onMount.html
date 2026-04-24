@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>useEffect — run once on mount</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; max-width: 520px; background: #fff; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 6px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// useEffect(fn, []) runs the effect exactly once, after the first render.
+// Perfect for one-time setup: setting a greeting, logging mount time, etc.
+
+const { useState, useEffect } = React;
+
+function Greeter() {
+    const [message, setMessage] = useState("…");
+
+    useEffect(() => {
+        const ts = new Date().toLocaleTimeString();
+        setMessage(`Hello — mounted at ${ts}`);
+        console.log("Greeter mounted");
+    }, []); // empty deps → run once, after mount
+
+    return (
+        <div className="card">
+            <h1>{message}</h1>
+            <p className="muted">
+                The effect ran once after the first render. Reloading the page mounts a
+                fresh component, so the timestamp updates only on a full refresh, not on
+                re-renders triggered by parent state.
+            </p>
+            <p className="muted">
+                Open the browser console: you'll see <code>"Greeter mounted"</code> exactly once.
+            </p>
+        </div>
+    );
+}
+
+ReactDOM.render(<Greeter />, document.getElementById("root"));
+</script>
+</body>
+</html>

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Custom hook — useLocalStorage</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; max-width: 520px; background: #fff; }
+        label { display: block; margin-top: 8px; font-size: 13px; color: #475569; }
+        input { width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font: inherit; margin-top: 4px; box-sizing: border-box; }
+        button { padding: 6px 10px; border: 1px solid #cbd5e1; background: #f1f5f9; border-radius: 6px; cursor: pointer; font: inherit; margin-top: 10px; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// `useLocalStorage` = `useState` that persists. Lazy initial reads from
+// localStorage; writes sync the value back after every change.
+
+const { useState, useEffect } = React;
+
+function useLocalStorage(key, initialValue) {
+    const [value, setValue] = useState(() => {
+        try {
+            const raw = window.localStorage.getItem(key);
+            return raw != null ? JSON.parse(raw) : initialValue;
+        } catch {
+            return initialValue;
+        }
+    });
+
+    useEffect(() => {
+        try { window.localStorage.setItem(key, JSON.stringify(value)); }
+        catch { /* quota exceeded or disabled — ignore */ }
+    }, [key, value]);
+
+    return [value, setValue];
+}
+
+function App() {
+    const [name, setName] = useLocalStorage("demo:name", "");
+    const [count, setCount] = useLocalStorage("demo:count", 0);
+
+    return (
+        <div className="card">
+            <h1>useLocalStorage — survives reloads</h1>
+
+            <label>Your name</label>
+            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Type here" />
+
+            <label style={{ marginTop: 14 }}>Counter</label>
+            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                <button onClick={() => setCount((c) => c - 1)}>−</button>
+                <strong style={{ minWidth: 40, textAlign: "center" }}>{count}</strong>
+                <button onClick={() => setCount((c) => c + 1)}>+</button>
+                <button onClick={() => setCount(0)}>reset</button>
+            </div>
+
+            <p className="muted">
+                Reload the iframe ("Reload" button above the preview) — both values
+                are restored from <code>localStorage</code>. Keys: <code>demo:name</code>,
+                <code>demo:count</code>.
+            </p>
+        </div>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

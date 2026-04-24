@@ -12,6 +12,7 @@ Built from the original [echristof67/react_js](https://github.com/echristof67/re
 | 2 | React Basics — `React.createElement` | render, props, functional & class components |
 | 3 | JSX | components, props, lists, composition |
 | 4 | State | `useState`, class state, controlled inputs |
+| 5 | Hooks & Data | `useEffect`, `useContext`, custom hooks, `fetch` |
 
 ## How it works
 
@@ -70,7 +71,8 @@ react-js-learning/
 │   ├── js-es6/                # Chapter 1 — 13 examples
 │   ├── react-basics/          # Chapter 2 — 19 examples
 │   ├── react-jsx/             # Chapter 3 — 23 examples
-│   └── react-state/           # Chapter 4 — 15 examples
+│   ├── react-state/           # Chapter 4 — 15 examples
+│   └── hooks-data/            # Chapter 5 — 11 examples
 ├── .github/workflows/pages.yml
 ├── .gitignore
 ├── LICENSE

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>fetch — loading, error, data</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; max-width: 640px; background: #fff; }
+        button { padding: 8px 14px; border: 1px solid #cbd5e1; background: #f1f5f9; border-radius: 6px; cursor: pointer; font: inherit; }
+        button:hover { background: #e2e8f0; }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
+        .row { padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 8px; margin-top: 8px; }
+        .row h3 { margin: 0; font-size: 14px; color: #0f172a; }
+        .row p { margin: 4px 0 0; font-size: 13px; color: #475569; }
+        .state { margin-top: 10px; font-size: 13px; padding: 8px 10px; border-radius: 6px; }
+        .state.loading { background: #eff6ff; color: #1d4ed8; }
+        .state.error { background: #fef2f2; color: #b91c1c; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// A concrete fetch pattern: three states (loading / error / data), a reload
+// button, and a cleanup flag so we never setState on an unmounted component.
+
+const { useState, useEffect } = React;
+
+function PostsList() {
+    const [posts, setPosts] = useState([]);
+    const [status, setStatus] = useState("idle"); // idle | loading | success | error
+    const [error, setError] = useState(null);
+    const [reloadId, setReloadId] = useState(0);
+
+    useEffect(() => {
+        let cancelled = false;
+        setStatus("loading");
+        setError(null);
+
+        fetch("https://jsonplaceholder.typicode.com/posts?_limit=5")
+            .then((res) => {
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                return res.json();
+            })
+            .then((data) => {
+                if (cancelled) return;
+                setPosts(data);
+                setStatus("success");
+            })
+            .catch((e) => {
+                if (cancelled) return;
+                setError(e.message);
+                setStatus("error");
+            });
+
+        return () => { cancelled = true; };
+    }, [reloadId]);
+
+    return (
+        <div className="card">
+            <h1>Posts (JSONPlaceholder)</h1>
+            <button disabled={status === "loading"} onClick={() => setReloadId((n) => n + 1)}>
+                {status === "loading" ? "Loading…" : "Reload"}
+            </button>
+
+            {status === "loading" && <div className="state loading">Loading posts…</div>}
+            {status === "error"   && <div className="state error">Error: {error}</div>}
+
+            {status === "success" && posts.map((p) => (
+                <div key={p.id} className="row">
+                    <h3>#{p.id} — {p.title}</h3>
+                    <p>{p.body}</p>
+                </div>
+            ))}
+
+            <p className="muted">
+                The <code>cancelled</code> flag prevents setting state after unmount
+                when the component leaves the tree mid-request.
+            </p>
+        </div>
+    );
+}
+
+ReactDOM.render(<PostsList />, document.getElementById("root"));
+</script>
+</body>
+</html>

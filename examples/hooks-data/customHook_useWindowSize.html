@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Custom hook — useWindowSize</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; max-width: 520px; background: #fff; }
+        .size { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 26px; color: #0369a1; margin: 6px 0; }
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background: #eef2ff; color: #3730a3; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// A custom hook can package an effect + its state together. Here the hook
+// returns live window dimensions — components consume it like useState.
+// Resize your browser (or the iframe) to see it update.
+
+const { useState, useEffect } = React;
+
+function useWindowSize() {
+    const [size, setSize] = useState({
+        width: window.innerWidth,
+        height: window.innerHeight,
+    });
+
+    useEffect(() => {
+        const handle = () => setSize({ width: window.innerWidth, height: window.innerHeight });
+        window.addEventListener("resize", handle);
+        return () => window.removeEventListener("resize", handle);
+    }, []);
+
+    return size;
+}
+
+function App() {
+    const { width, height } = useWindowSize();
+    const breakpoint = width < 640 ? "mobile" : width < 1024 ? "tablet" : "desktop";
+
+    return (
+        <div className="card">
+            <h1>Live window size</h1>
+            <div className="size">{width} × {height}</div>
+            <span className="badge">{breakpoint}</span>
+            <p className="muted">
+                The hook attaches a single <code>resize</code> listener and exposes a
+                plain <code>{"{ width, height }"}</code> object — components don't need
+                to know how it's wired.
+            </p>
+        </div>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

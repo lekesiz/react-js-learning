@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>fetch — debounced search</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; max-width: 640px; background: #fff; }
+        input { width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font: inherit; box-sizing: border-box; }
+        .row { padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 8px; margin-top: 8px; }
+        .row h3 { margin: 0; font-size: 14px; color: #0f172a; }
+        .row p { margin: 4px 0 0; font-size: 12px; color: #475569; }
+        .state { margin-top: 10px; font-size: 13px; padding: 8px 10px; border-radius: 6px; }
+        .state.loading { background: #eff6ff; color: #1d4ed8; }
+        .state.empty   { background: #f8fafc; color: #64748b; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// Debounced search: we wait 300 ms after the user stops typing before
+// hitting the API. `AbortController` cancels an in-flight request if a
+// newer query arrives while the old one is still running.
+
+const { useState, useEffect } = React;
+
+// --- Custom hook: debounce a value ----------------------------------------
+function useDebounced(value, delay = 300) {
+    const [debounced, setDebounced] = useState(value);
+    useEffect(() => {
+        const id = setTimeout(() => setDebounced(value), delay);
+        return () => clearTimeout(id);
+    }, [value, delay]);
+    return debounced;
+}
+
+// --- Main search UI --------------------------------------------------------
+function Search() {
+    const [query, setQuery] = useState("");
+    const debouncedQuery = useDebounced(query, 300);
+
+    const [results, setResults] = useState([]);
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        if (!debouncedQuery.trim()) {
+            setResults([]);
+            setLoading(false);
+            return;
+        }
+
+        const ctrl = new AbortController();
+        setLoading(true);
+
+        fetch(
+            `https://jsonplaceholder.typicode.com/posts?q=${encodeURIComponent(debouncedQuery)}&_limit=8`,
+            { signal: ctrl.signal }
+        )
+            .then((res) => res.json())
+            .then((data) => {
+                setResults(data);
+                setLoading(false);
+            })
+            .catch((e) => {
+                if (e.name !== "AbortError") setLoading(false);
+            });
+
+        return () => ctrl.abort();
+    }, [debouncedQuery]);
+
+    return (
+        <div className="card">
+            <h1>Debounced search</h1>
+            <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Type to search posts (e.g. 'rerum')"
+                autoFocus
+            />
+
+            {loading && <div className="state loading">Searching…</div>}
+            {!loading && debouncedQuery && results.length === 0 && (
+                <div className="state empty">No results for "{debouncedQuery}".</div>
+            )}
+            {!loading && results.map((p) => (
+                <div key={p.id} className="row">
+                    <h3>#{p.id} — {p.title}</h3>
+                    <p>{p.body.slice(0, 120)}…</p>
+                </div>
+            ))}
+
+            <p className="muted">
+                Two patterns at once: <code>useDebounced</code> waits 300 ms after the
+                last keystroke, and <code>AbortController</code> cancels any prior
+                request that's still in flight.
+            </p>
+        </div>
+    );
+}
+
+ReactDOM.render(<Search />, document.getElementById("root"));
+</script>
+</body>
+</html>

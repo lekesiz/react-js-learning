@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Custom hook — useToggle</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; max-width: 520px; background: #fff; margin-bottom: 12px; }
+        button { padding: 8px 14px; border: 1px solid #cbd5e1; background: #f1f5f9; border-radius: 6px; cursor: pointer; font: inherit; }
+        button:hover { background: #e2e8f0; }
+        .panel { margin-top: 12px; padding: 10px 12px; border-radius: 8px; background: #f8fafc; border: 1px dashed #cbd5e1; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// A "custom hook" is just a plain function whose name starts with `use`
+// and which calls other hooks. It's the idiomatic way to package reusable
+// stateful logic. `useToggle` bundles a boolean + toggle/set helpers.
+
+const { useState, useCallback } = React;
+
+function useToggle(initial = false) {
+    const [on, setOn] = useState(initial);
+    const toggle = useCallback(() => setOn((v) => !v), []);
+    return [on, toggle, setOn];
+}
+
+// Two independent components, each using the hook with its own state.
+function Panel({ title }) {
+    const [open, toggle] = useToggle();
+    return (
+        <div className="card">
+            <button onClick={toggle}>{open ? "Hide" : "Show"} {title}</button>
+            {open && <div className="panel">{title} content — toggled via <code>useToggle()</code>.</div>}
+        </div>
+    );
+}
+
+function App() {
+    return (
+        <div>
+            <h1>useToggle — one hook, many call sites</h1>
+            <Panel title="Panel A" />
+            <Panel title="Panel B" />
+            <p className="muted">
+                Each <code>&lt;Panel&gt;</code> has its own <code>on</code> state. The
+                hook is called twice, and React keeps the two state slots separate
+                because it tracks them per component instance, not per function.
+            </p>
+        </div>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

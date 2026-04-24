@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>useEffect — event listener cleanup</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; min-height: 220px; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; max-width: 520px; background: #fff; }
+        .pos { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 18px; color: #0369a1; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 8px; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// Same pattern as an interval: subscribe on mount, unsubscribe on cleanup.
+// Move your mouse over the page — the position follows live.
+
+const { useState, useEffect } = React;
+
+function useMousePosition() {
+    const [pos, setPos] = useState({ x: 0, y: 0 });
+    useEffect(() => {
+        const handle = (e) => setPos({ x: e.clientX, y: e.clientY });
+        window.addEventListener("mousemove", handle);
+        return () => window.removeEventListener("mousemove", handle);
+    }, []);
+    return pos;
+}
+
+function App() {
+    const { x, y } = useMousePosition();
+    return (
+        <div className="card">
+            <h1>Mouse position (global listener)</h1>
+            <p className="pos">x: {x}, y: {y}</p>
+            <p className="muted">
+                We add a <code>mousemove</code> listener on mount and remove it on
+                unmount. React will only ever have one listener attached for this
+                component — the cleanup prevents duplicate handlers from piling up.
+            </p>
+        </div>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>
