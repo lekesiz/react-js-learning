@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Split state/dispatch contexts</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; max-width: 560px; background: #fff; margin-bottom: 10px; }
+        .count { font-size: 28px; font-weight: 700; color: #0369a1; font-family: 'JetBrains Mono', ui-monospace, monospace; }
+        button { padding: 8px 14px; border: 1px solid #0369a1; background: #0369a1; color: #fff; border-radius: 6px; cursor: pointer; font: inherit; font-weight: 600; margin-right: 4px; }
+        button.secondary { background: #fff; color: #0369a1; }
+        .rerenders { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 13px; padding: 6px 10px; border-radius: 6px; background: #fef3c7; color: #92400e; display: inline-block; margin-top: 6px; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// A subtle performance tax of putting {state, dispatch} in one Context
+// value: every state change re-renders every consumer, even the ones
+// that only dispatch. Splitting state into its own context (and
+// dispatch into another) lets "dispatch-only" components skip re-renders.
+
+const { useReducer, useContext, createContext, useRef, memo } = React;
+
+const StateCtx    = createContext(null);
+const DispatchCtx = createContext(null);
+
+function reducer(state, action) {
+    switch (action.type) {
+        case "inc":   return { ...state, count: state.count + 1 };
+        case "reset": return { ...state, count: 0 };
+        default:      return state;
+    }
+}
+
+function Provider({ children }) {
+    const [state, dispatch] = useReducer(reducer, { count: 0 });
+    return (
+        <DispatchCtx.Provider value={dispatch}>
+            <StateCtx.Provider value={state}>{children}</StateCtx.Provider>
+        </DispatchCtx.Provider>
+    );
+}
+
+// Counts how often this component has rendered — no extra hooks needed.
+function useRenderCount() {
+    const ref = useRef(0);
+    ref.current += 1;
+    return ref.current;
+}
+
+// Reads STATE. Re-renders on every count change (expected).
+const CountDisplay = memo(function CountDisplay() {
+    const state = useContext(StateCtx);
+    const renders = useRenderCount();
+    return (
+        <div className="card">
+            <strong>CountDisplay</strong> (reads state)
+            <div className="count">{state.count}</div>
+            <div className="rerenders">renders: {renders}</div>
+        </div>
+    );
+});
+
+// Reads only DISPATCH. Does NOT re-render when count changes.
+const ControlButtons = memo(function ControlButtons() {
+    const dispatch = useContext(DispatchCtx);
+    const renders = useRenderCount();
+    return (
+        <div className="card">
+            <strong>ControlButtons</strong> (reads dispatch only)
+            <div style={{ marginTop: 8 }}>
+                <button onClick={() => dispatch({ type: "inc" })}>+1</button>
+                <button className="secondary" onClick={() => dispatch({ type: "reset" })}>reset</button>
+            </div>
+            <div className="rerenders">renders: {renders}</div>
+        </div>
+    );
+});
+
+// A totally unrelated component that just reads state for fun.
+const StateWatcher = memo(function StateWatcher() {
+    const state = useContext(StateCtx);
+    const renders = useRenderCount();
+    return (
+        <div className="card">
+            <strong>StateWatcher</strong> (reads state) — count = {state.count}
+            <div className="rerenders">renders: {renders}</div>
+        </div>
+    );
+});
+
+function App() {
+    return (
+        <Provider>
+            <h1>Split contexts — avoid wasted re-renders</h1>
+            <CountDisplay />
+            <ControlButtons />
+            <StateWatcher />
+            <p className="muted">
+                Click <code>+1</code> a few times. Notice that <strong>ControlButtons</strong>
+                only rendered once — because its Context value (<code>dispatch</code>) never
+                changes, <code>React.memo</code> + a stable context lets it skip updates.
+            </p>
+        </Provider>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

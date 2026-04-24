@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mini CRUD — normalized contacts</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .app { display: grid; grid-template-columns: 300px 1fr; gap: 12px; max-width: 780px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; background: #fff; }
+        .toolbar { display: flex; gap: 6px; margin-bottom: 10px; }
+        input, select { width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font: inherit; box-sizing: border-box; }
+        label { display: block; font-size: 12px; color: #64748b; margin-top: 8px; }
+        button { padding: 8px 12px; border: 1px solid #0369a1; background: #0369a1; color: #fff; border-radius: 6px; cursor: pointer; font: inherit; font-weight: 600; font-size: 13px; }
+        button.secondary { background: #fff; color: #0369a1; }
+        button.danger { background: #dc2626; border-color: #dc2626; }
+        button:disabled { background: #94a3b8; border-color: #94a3b8; cursor: not-allowed; }
+        .row { padding: 8px 10px; border: 1px solid transparent; border-radius: 6px; cursor: pointer; margin-top: 2px; }
+        .row:hover { background: #f1f5f9; }
+        .row.active { background: #eff6ff; border-color: #93c5fd; }
+        .row strong { display: block; font-size: 13px; }
+        .row span { font-size: 12px; color: #64748b; }
+        .empty { color: #64748b; font-size: 13px; padding: 20px; text-align: center; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+        @media (max-width: 700px) { .app { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// Everything from this chapter, in one small app:
+//   - global state via Context + useReducer
+//   - normalized { byId, allIds } shape
+//   - selectors for filtered / searched views
+//   - CRUD actions: add / update / remove / select
+
+const { useReducer, useContext, useState, createContext, useMemo } = React;
+
+// ---------- Reducer ----------------------------------------------------------
+const initial = {
+    byId: {
+        1: { id: 1, name: "Ada Lovelace",   email: "ada@babbage.net",     group: "math"    },
+        2: { id: 2, name: "Alan Turing",    email: "alan@bletchley.uk",   group: "logic"   },
+        3: { id: 3, name: "Grace Hopper",   email: "grace@cobol.org",     group: "compilers"},
+    },
+    allIds: [1, 2, 3],
+    selectedId: 1,
+    search: "",
+    filterGroup: "all",
+    nextId: 4,
+};
+
+function reducer(state, action) {
+    switch (action.type) {
+        case "add": {
+            const id = state.nextId;
+            return {
+                ...state,
+                byId: { ...state.byId, [id]: { id, ...action.data } },
+                allIds: [...state.allIds, id],
+                selectedId: id,
+                nextId: id + 1,
+            };
+        }
+        case "update":
+            return {
+                ...state,
+                byId: { ...state.byId, [action.id]: { ...state.byId[action.id], ...action.patch } },
+            };
+        case "remove": {
+            const { [action.id]: _gone, ...rest } = state.byId;
+            const remaining = state.allIds.filter((x) => x !== action.id);
+            return {
+                ...state,
+                byId: rest,
+                allIds: remaining,
+                selectedId: state.selectedId === action.id ? (remaining[0] ?? null) : state.selectedId,
+            };
+        }
+        case "select":
+            return { ...state, selectedId: action.id };
+        case "search":
+            return { ...state, search: action.value };
+        case "filterGroup":
+            return { ...state, filterGroup: action.value };
+        default:
+            return state;
+    }
+}
+
+// ---------- Store context ----------------------------------------------------
+const Store = createContext(null);
+const useStore = () => useContext(Store);
+
+// ---------- Selectors --------------------------------------------------------
+const selectAll     = (s) => s.allIds.map((id) => s.byId[id]);
+const selectVisible = (s) =>
+    selectAll(s)
+        .filter((c) => s.filterGroup === "all" || c.group === s.filterGroup)
+        .filter((c) => !s.search || [c.name, c.email].some((f) => f.toLowerCase().includes(s.search.toLowerCase())));
+const selectSelected = (s) => (s.selectedId != null ? s.byId[s.selectedId] : null);
+
+// ---------- List pane --------------------------------------------------------
+function ContactList() {
+    const { state, dispatch } = useStore();
+    const visible = useMemo(() => selectVisible(state), [state]);
+
+    return (
+        <div className="card">
+            <div className="toolbar">
+                <input placeholder="Search name or email…"
+                       value={state.search}
+                       onChange={(e) => dispatch({ type: "search", value: e.target.value })} />
+            </div>
+            <select value={state.filterGroup}
+                    onChange={(e) => dispatch({ type: "filterGroup", value: e.target.value })}>
+                <option value="all">All groups</option>
+                <option value="math">math</option>
+                <option value="logic">logic</option>
+                <option value="compilers">compilers</option>
+                <option value="other">other</option>
+            </select>
+
+            <div style={{ marginTop: 10 }}>
+                {visible.length === 0 && <div className="empty">No matches.</div>}
+                {visible.map((c) => (
+                    <div key={c.id}
+                         className={"row " + (c.id === state.selectedId ? "active" : "")}
+                         onClick={() => dispatch({ type: "select", id: c.id })}>
+                        <strong>{c.name}</strong>
+                        <span>{c.email} · {c.group}</span>
+                    </div>
+                ))}
+            </div>
+
+            <button style={{ marginTop: 10, width: "100%" }}
+                    onClick={() => dispatch({ type: "add", data: { name: "New contact", email: "new@example.com", group: "other" } })}>
+                + Add contact
+            </button>
+        </div>
+    );
+}
+
+// ---------- Detail / edit pane ----------------------------------------------
+function ContactDetail() {
+    const { state, dispatch } = useStore();
+    const contact = selectSelected(state);
+
+    if (!contact) {
+        return <div className="card empty">No contact selected.</div>;
+    }
+
+    const update = (patch) => dispatch({ type: "update", id: contact.id, patch });
+
+    return (
+        <div className="card">
+            <label>Name
+                <input value={contact.name} onChange={(e) => update({ name: e.target.value })} />
+            </label>
+            <label>Email
+                <input value={contact.email} onChange={(e) => update({ email: e.target.value })} />
+            </label>
+            <label>Group
+                <select value={contact.group} onChange={(e) => update({ group: e.target.value })}>
+                    <option value="math">math</option>
+                    <option value="logic">logic</option>
+                    <option value="compilers">compilers</option>
+                    <option value="other">other</option>
+                </select>
+            </label>
+
+            <div style={{ display: "flex", gap: 6, marginTop: 14 }}>
+                <button className="danger" onClick={() => dispatch({ type: "remove", id: contact.id })}>Delete</button>
+                <span style={{ flex: 1 }} />
+                <span style={{ fontSize: 12, color: "#64748b", alignSelf: "center" }}>id · {contact.id}</span>
+            </div>
+        </div>
+    );
+}
+
+// ---------- Top-level --------------------------------------------------------
+function App() {
+    const [state, dispatch] = useReducer(reducer, initial);
+    return (
+        <Store.Provider value={{ state, dispatch }}>
+            <h1>Normalized contacts — Context + Reducer + selectors</h1>
+            <div className="app">
+                <ContactList />
+                <ContactDetail />
+            </div>
+            <p className="muted">
+                Edit a field on the right — because the detail view dispatches
+                <code>update</code>, the list name refreshes immediately. Delete
+                the selected contact and the reducer also clears <code>selectedId</code>.
+            </p>
+        </Store.Provider>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

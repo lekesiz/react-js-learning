@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Normalization — byId / allIds</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; max-width: 620px; background: #fff; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        .col { padding: 10px 12px; border-radius: 8px; background: #0f172a; color: #a5f3fc; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; white-space: pre; overflow-x: auto; max-height: 300px; overflow-y: auto; }
+        .col-title { font-weight: 600; color: #a5f3fc; font-family: system-ui, sans-serif; font-size: 13px; margin-bottom: 6px; }
+        .item { padding: 8px 10px; border: 1px solid #e5e7eb; border-radius: 6px; margin-top: 4px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+        button { padding: 6px 10px; border: 1px solid #cbd5e1; background: #f1f5f9; border-radius: 6px; cursor: pointer; font: inherit; font-size: 12px; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+        @media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// A flat { byId, allIds } shape makes lookups O(1), updates precise, and
+// dedup automatic. Arrays-of-objects look innocent but quickly become
+// painful: "find the contact with id 42 and update its tag" turns into
+// .map(c => c.id === 42 ? ... : c) everywhere.
+
+const { useState } = React;
+
+const initialList = [
+    { id: 1, name: "Ada",   tag: "math" },
+    { id: 2, name: "Alan",  tag: "logic" },
+    { id: 3, name: "Grace", tag: "naval" },
+];
+
+// Normalize an array into { byId, allIds }.
+function normalize(list) {
+    const byId = {};
+    const allIds = [];
+    for (const item of list) {
+        byId[item.id] = item;
+        allIds.push(item.id);
+    }
+    return { byId, allIds };
+}
+
+function App() {
+    const [store, setStore] = useState(() => normalize(initialList));
+
+    const updateTag = (id, tag) =>
+        setStore((s) => ({ ...s, byId: { ...s.byId, [id]: { ...s.byId[id], tag } } }));
+
+    const remove = (id) =>
+        setStore((s) => {
+            const { [id]: _removed, ...rest } = s.byId;
+            return { byId: rest, allIds: s.allIds.filter((x) => x !== id) };
+        });
+
+    return (
+        <div className="card">
+            <h1>byId / allIds — the normalized shape</h1>
+
+            <div>
+                {store.allIds.map((id) => {
+                    const item = store.byId[id];
+                    return (
+                        <div key={id} className="item">
+                            <span><strong>{item.name}</strong> — <code>{item.tag}</code></span>
+                            <span style={{ display: "flex", gap: 4 }}>
+                                <button onClick={() => updateTag(id, "updated-" + Date.now().toString().slice(-4))}>retag</button>
+                                <button onClick={() => remove(id)}>remove</button>
+                            </span>
+                        </div>
+                    );
+                })}
+            </div>
+
+            <div className="grid">
+                <div>
+                    <div className="col-title">store.byId (lookup table)</div>
+                    <div className="col">{JSON.stringify(store.byId, null, 2)}</div>
+                </div>
+                <div>
+                    <div className="col-title">store.allIds (display order)</div>
+                    <div className="col">{JSON.stringify(store.allIds, null, 2)}</div>
+                </div>
+            </div>
+
+            <p className="muted">
+                To <strong>update</strong> one item, write one key:
+                <code>byId[id] = newItem</code>. Two different lists can both point
+                at the same canonical record in <code>byId</code> without duplication.
+            </p>
+        </div>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

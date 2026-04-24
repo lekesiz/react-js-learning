@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Selectors — derived state</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; max-width: 600px; background: #fff; }
+        input[type="search"] { width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font: inherit; margin-bottom: 10px; box-sizing: border-box; }
+        .filters { display: flex; gap: 6px; margin-bottom: 10px; }
+        .filters button { padding: 4px 12px; font-size: 12px; font-weight: 500; border: 1px solid #cbd5e1; background: #f8fafc; color: #334155; border-radius: 999px; cursor: pointer; }
+        .filters button.active { background: #0369a1; color: #fff; border-color: #0369a1; }
+        .item { padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 8px; margin-top: 4px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+        .stats { margin-top: 12px; padding: 10px 12px; border-radius: 8px; background: #f8fafc; font-size: 13px; }
+        .stats strong { color: #0369a1; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// Selectors are plain functions that compute derived values from store state.
+// Never put derived values in state — they drift. Compute them on demand.
+// useMemo caches the result while the inputs don't change.
+
+const { useState, useMemo } = React;
+
+const STORE = {
+    byId: {
+        1: { id: 1, name: "Coffee beans",   price: 14, category: "grocery" },
+        2: { id: 2, name: "Notebook A5",    price: 6,  category: "office" },
+        3: { id: 3, name: "Mechanical pen", price: 3,  category: "office" },
+        4: { id: 4, name: "Olive oil 1L",   price: 12, category: "grocery" },
+        5: { id: 5, name: "USB-C cable",    price: 9,  category: "electronics" },
+        6: { id: 6, name: "Milk 1L",        price: 2,  category: "grocery" },
+    },
+    allIds: [1, 2, 3, 4, 5, 6],
+};
+
+// ---- Selectors (pure, derived) ------------------------------------------
+const selectAll        = (s) => s.allIds.map((id) => s.byId[id]);
+const selectByCategory = (s, category) =>
+    selectAll(s).filter((p) => category === "all" ? true : p.category === category);
+const selectSearch     = (list, q) =>
+    !q ? list : list.filter((p) => p.name.toLowerCase().includes(q.toLowerCase()));
+const selectTotals     = (list) => ({
+    count: list.length,
+    sum: list.reduce((a, p) => a + p.price, 0),
+});
+
+// ---- Component ----------------------------------------------------------
+function App() {
+    const [category, setCategory] = useState("all");
+    const [query, setQuery] = useState("");
+
+    // Compose selectors, memoised per (category, query).
+    const visible = useMemo(
+        () => selectSearch(selectByCategory(STORE, category), query),
+        [category, query]
+    );
+    const totals = useMemo(() => selectTotals(visible), [visible]);
+
+    return (
+        <div className="card">
+            <h1>Selectors — derived state from a normalized store</h1>
+
+            <input type="search" placeholder="Search products…"
+                   value={query} onChange={(e) => setQuery(e.target.value)} />
+
+            <div className="filters">
+                {["all", "grocery", "office", "electronics"].map((c) => (
+                    <button key={c}
+                            className={category === c ? "active" : ""}
+                            onClick={() => setCategory(c)}>{c}</button>
+                ))}
+            </div>
+
+            {visible.length === 0 && <p className="muted">No matches.</p>}
+            {visible.map((p) => (
+                <div key={p.id} className="item">
+                    <span><strong>{p.name}</strong> <span className="muted">({p.category})</span></span>
+                    <span>€{p.price}</span>
+                </div>
+            ))}
+
+            <div className="stats">
+                Showing <strong>{totals.count}</strong> items · total <strong>€{totals.sum}</strong>
+            </div>
+
+            <p className="muted">
+                The store never stores <em>visible</em>, <em>count</em> or <em>sum</em>
+                — they're pure functions of <code>STORE</code> + filters. Change the
+                filter, the derived view recomputes; nothing to keep in sync.
+            </p>
+        </div>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

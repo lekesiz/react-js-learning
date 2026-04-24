@@ -45,6 +45,7 @@
     sparkles: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-6 w-6"><path d="M12 3l1.8 4.6L18 9.4l-4.2 1.8L12 15.8 10.2 11.2 6 9.4l4.2-1.8L12 3z"/><path d="M5 17l.9 2.1L8 20l-2.1.9L5 23l-.9-2.1L2 20l2.1-.9L5 17z"/><path d="M19 14l.9 2.1L22 17l-2.1.9L19 20l-.9-2.1L16 17l2.1-.9L19 14z"/></svg>`,
     zap: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-6 w-6"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`,
     route: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6"><circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/></svg>`,
+    database: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v6c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/><path d="M3 11v6c0 1.66 4.03 3 9 3s9-1.34 9-3v-6"/></svg>`,
   };
 
   // ----- theme toggle ------------------------------------------
@@ -66,13 +67,20 @@
   })();
 
   // ----- top nav -----------------------------------------------
+  // Short labels so the nav fits at 7+ chapters without wrapping.
+  // Split on em-dash OR opening paren, then trim.
+  function shortNavLabel(title) {
+    return title.split(/[—(]/)[0].trim();
+  }
+
   function renderNav() {
     navLinks.innerHTML = "";
     for (const c of CHAPTERS) {
       const a = h("a", {
         href: `#/chapter/${c.id}`,
         class: `nav-link ${location.hash.startsWith(`#/chapter/${c.id}`) || location.hash.includes(`#/example/${c.id}/`) ? "active" : ""}`,
-      }, `${c.number}. ${c.title.split("—")[0].trim()}`);
+        title: c.title,
+      }, `${c.number}. ${shortNavLabel(c.title)}`);
       navLinks.append(a);
     }
   }

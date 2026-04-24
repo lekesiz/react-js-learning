@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>useReducer — todo list</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; max-width: 540px; background: #fff; }
+        form { display: flex; gap: 8px; margin-bottom: 10px; }
+        input[type="text"] { flex: 1; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font: inherit; }
+        button { padding: 8px 14px; border: 1px solid #0369a1; background: #0369a1; color: #fff; border-radius: 6px; cursor: pointer; font: inherit; font-weight: 600; }
+        button.secondary { background: #fff; color: #334155; border-color: #cbd5e1; font-weight: 400; }
+        .item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid #e5e7eb; border-radius: 8px; margin-top: 6px; }
+        .item input[type="checkbox"] { margin: 0; }
+        .item.done span { text-decoration: line-through; color: #9ca3af; }
+        .item span { flex: 1; }
+        .filters { display: flex; gap: 6px; margin-top: 12px; }
+        .filters button { padding: 4px 12px; font-size: 12px; font-weight: 500; }
+        .filters button.active { background: #0369a1; color: #fff; border-color: #0369a1; }
+        .filters button:not(.active) { background: #f8fafc; color: #334155; border-color: #cbd5e1; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// A todo list is where useReducer starts to pay for itself: 4 distinct
+// operations (add, toggle, delete, setFilter) share one state and
+// become 4 action types — far cleaner than 4 coupled useState setters.
+
+const { useReducer, useState } = React;
+
+const initialState = {
+    todos: [
+        { id: 1, text: "Learn useReducer", done: true },
+        { id: 2, text: "Refactor form state", done: false },
+    ],
+    filter: "all", // "all" | "active" | "done"
+    nextId: 3,
+};
+
+function reducer(state, action) {
+    switch (action.type) {
+        case "add":
+            if (!action.text.trim()) return state;
+            return {
+                ...state,
+                todos: [...state.todos, { id: state.nextId, text: action.text, done: false }],
+                nextId: state.nextId + 1,
+            };
+        case "toggle":
+            return {
+                ...state,
+                todos: state.todos.map((t) => (t.id === action.id ? { ...t, done: !t.done } : t)),
+            };
+        case "remove":
+            return { ...state, todos: state.todos.filter((t) => t.id !== action.id) };
+        case "clearDone":
+            return { ...state, todos: state.todos.filter((t) => !t.done) };
+        case "setFilter":
+            return { ...state, filter: action.filter };
+        default:
+            return state;
+    }
+}
+
+function App() {
+    const [state, dispatch] = useReducer(reducer, initialState);
+    const [draft, setDraft] = useState("");
+
+    const visible = state.todos.filter((t) =>
+        state.filter === "all" ? true : state.filter === "done" ? t.done : !t.done
+    );
+    const remaining = state.todos.filter((t) => !t.done).length;
+
+    return (
+        <div className="card">
+            <h1>Todo list — 4 actions, one reducer</h1>
+
+            <form onSubmit={(e) => { e.preventDefault(); dispatch({ type: "add", text: draft }); setDraft(""); }}>
+                <input type="text" value={draft} onChange={(e) => setDraft(e.target.value)}
+                       placeholder="What needs doing?" />
+                <button type="submit">Add</button>
+            </form>
+
+            {visible.map((t) => (
+                <div key={t.id} className={"item " + (t.done ? "done" : "")}>
+                    <input type="checkbox" checked={t.done}
+                           onChange={() => dispatch({ type: "toggle", id: t.id })} />
+                    <span>{t.text}</span>
+                    <button className="secondary" onClick={() => dispatch({ type: "remove", id: t.id })}>×</button>
+                </div>
+            ))}
+            {visible.length === 0 && <p className="muted">Nothing to show for filter "{state.filter}".</p>}
+
+            <div className="filters">
+                {["all", "active", "done"].map((f) => (
+                    <button key={f}
+                            className={state.filter === f ? "active" : ""}
+                            onClick={() => dispatch({ type: "setFilter", filter: f })}>{f}</button>
+                ))}
+                <button className="secondary" style={{ marginLeft: "auto" }}
+                        onClick={() => dispatch({ type: "clearDone" })}>clear done</button>
+            </div>
+            <p className="muted">{remaining} remaining. State holds <code>todos</code>, <code>filter</code>, <code>nextId</code> — the reducer keeps them in sync.</p>
+        </div>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

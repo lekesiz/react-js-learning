@@ -14,6 +14,7 @@ Built from the original [echristof67/react_js](https://github.com/echristof67/re
 | 4 | State | `useState`, class state, controlled inputs |
 | 5 | Hooks & Data | `useEffect`, `useContext`, custom hooks, `fetch` |
 | 6 | Router & Forms | React Router, controlled forms, validation, multi-step wizard |
+| 7 | Data Patterns | `useReducer`, Context + Reducer store, normalization, selectors, mini CRUD |
 
 ## How it works
 
@@ -74,7 +75,8 @@ react-js-learning/
 │   ├── react-jsx/             # Chapter 3 — 23 examples
 │   ├── react-state/           # Chapter 4 — 15 examples
 │   ├── hooks-data/            # Chapter 5 — 11 examples
-│   └── router-forms/          # Chapter 6 — 10 examples
+│   ├── router-forms/          # Chapter 6 — 10 examples
+│   └── data-patterns/         # Chapter 7 — 9 examples
 ├── .github/workflows/pages.yml
 ├── .gitignore
 ├── LICENSE

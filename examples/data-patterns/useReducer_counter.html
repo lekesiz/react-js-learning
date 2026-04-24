@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>useReducer — counter</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; max-width: 520px; background: #fff; }
+        .count { font-size: 36px; font-weight: 700; color: #0369a1; text-align: center; margin: 10px 0; font-family: 'JetBrains Mono', ui-monospace, monospace; }
+        button { padding: 8px 14px; border: 1px solid #cbd5e1; background: #f1f5f9; border-radius: 6px; cursor: pointer; font: inherit; margin: 0 4px; }
+        button:hover { background: #e2e8f0; }
+        .log { margin-top: 14px; padding: 10px 12px; border-radius: 8px; background: #0f172a; color: #a5f3fc; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; max-height: 120px; overflow-y: auto; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// useReducer is useState's cousin for "complex or coupled" state.
+// You describe transitions as (state, action) => nextState — same
+// mental model as Redux, but purely in local component state.
+
+const { useReducer } = React;
+
+const initialState = { count: 0, log: [] };
+
+// Pure function. For each action type, return the new state object.
+function reducer(state, action) {
+    switch (action.type) {
+        case "increment":
+            return { count: state.count + 1, log: [...state.log, "+1"] };
+        case "decrement":
+            return { count: state.count - 1, log: [...state.log, "-1"] };
+        case "add":
+            return { count: state.count + action.value, log: [...state.log, `+${action.value}`] };
+        case "reset":
+            return { count: 0, log: [...state.log, "reset"] };
+        default:
+            throw new Error("Unknown action: " + action.type);
+    }
+}
+
+function App() {
+    const [state, dispatch] = useReducer(reducer, initialState);
+
+    return (
+        <div className="card">
+            <h1>useReducer — a counter with action types</h1>
+            <div className="count">{state.count}</div>
+            <div style={{ textAlign: "center" }}>
+                <button onClick={() => dispatch({ type: "decrement" })}>−1</button>
+                <button onClick={() => dispatch({ type: "increment" })}>+1</button>
+                <button onClick={() => dispatch({ type: "add", value: 10 })}>+10</button>
+                <button onClick={() => dispatch({ type: "reset" })}>reset</button>
+            </div>
+
+            <div className="log">
+                {state.log.length === 0
+                    ? "// actions will appear here"
+                    : state.log.map((l, i) => <div key={i}>&gt; {l}</div>)}
+            </div>
+
+            <p className="muted">
+                Each button dispatches an <code>action</code>; the <code>reducer</code>
+                computes the next state. Never mutate — always return a new object.
+            </p>
+        </div>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

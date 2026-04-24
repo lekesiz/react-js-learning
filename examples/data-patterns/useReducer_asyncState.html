@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>useReducer — async state machine</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; max-width: 560px; background: #fff; }
+        button { padding: 8px 14px; border: 1px solid #0369a1; background: #0369a1; color: #fff; border-radius: 6px; cursor: pointer; font: inherit; font-weight: 600; }
+        button:disabled { background: #94a3b8; border-color: #94a3b8; cursor: not-allowed; }
+        .badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; margin-left: 10px; }
+        .badge.idle    { background: #e2e8f0; color: #334155; }
+        .badge.loading { background: #dbeafe; color: #1d4ed8; }
+        .badge.success { background: #d1fae5; color: #065f46; }
+        .badge.error   { background: #fee2e2; color: #991b1b; }
+        .row { padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 8px; margin-top: 6px; font-size: 13px; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// The four states of any data fetch — idle, loading, success, error —
+// are naturally expressed as a state machine. A reducer captures the
+// allowed transitions and makes impossible states unrepresentable.
+
+const { useReducer } = React;
+
+const initial = { status: "idle", data: null, error: null };
+
+function reducer(state, action) {
+    switch (action.type) {
+        case "fetch":    return { status: "loading", data: null,        error: null };
+        case "success":  return { status: "success", data: action.data, error: null };
+        case "error":    return { status: "error",   data: null,        error: action.error };
+        case "reset":    return initial;
+        default:         return state;
+    }
+}
+
+function App() {
+    const [state, dispatch] = useReducer(reducer, initial);
+
+    async function load() {
+        dispatch({ type: "fetch" });
+        try {
+            const res = await fetch("https://jsonplaceholder.typicode.com/todos?_limit=5");
+            if (!res.ok) throw new Error("HTTP " + res.status);
+            dispatch({ type: "success", data: await res.json() });
+        } catch (e) {
+            dispatch({ type: "error", error: e.message });
+        }
+    }
+
+    async function loadBroken() {
+        dispatch({ type: "fetch" });
+        // deliberately hit a URL that 404s so you see the error branch
+        try {
+            const res = await fetch("https://jsonplaceholder.typicode.com/not-a-real-endpoint-" + Date.now());
+            if (!res.ok) throw new Error("HTTP " + res.status);
+            dispatch({ type: "success", data: await res.json() });
+        } catch (e) {
+            dispatch({ type: "error", error: e.message });
+        }
+    }
+
+    return (
+        <div className="card">
+            <h1>
+                Async as a reducer
+                <span className={"badge " + state.status}>{state.status}</span>
+            </h1>
+
+            <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={load} disabled={state.status === "loading"}>Load todos</button>
+                <button onClick={loadBroken} disabled={state.status === "loading"}>Load broken URL</button>
+                <button onClick={() => dispatch({ type: "reset" })}>Reset</button>
+            </div>
+
+            {state.status === "error" && (
+                <div className="row" style={{ background: "#fef2f2", borderColor: "#fca5a5", color: "#991b1b" }}>
+                    <strong>Error:</strong> {state.error}
+                </div>
+            )}
+
+            {state.status === "success" && state.data.map((t) => (
+                <div key={t.id} className="row">#{t.id} — {t.title} <span className="muted">({t.completed ? "done" : "open"})</span></div>
+            ))}
+
+            <p className="muted">
+                The reducer only moves the machine along legal edges:
+                <code>idle→loading</code>, <code>loading→success</code> or
+                <code>loading→error</code>. You can't accidentally render data while
+                still loading, or an error while showing data.
+            </p>
+        </div>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

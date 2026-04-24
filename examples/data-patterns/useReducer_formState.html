@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>useReducer — form state</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; max-width: 520px; background: #fff; }
+        label { display: block; font-size: 13px; color: #475569; margin-top: 10px; }
+        input { width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font: inherit; margin-top: 4px; box-sizing: border-box; }
+        input.invalid { border-color: #dc2626; }
+        .err { color: #dc2626; font-size: 12px; margin-top: 4px; }
+        .actions { display: flex; gap: 8px; margin-top: 14px; }
+        button { padding: 8px 18px; border: 1px solid #0369a1; background: #0369a1; color: #fff; border-radius: 6px; cursor: pointer; font: inherit; font-weight: 600; }
+        button.secondary { background: #fff; color: #0369a1; }
+        button:disabled { background: #94a3b8; border-color: #94a3b8; cursor: not-allowed; }
+        .echo { margin-top: 12px; padding: 10px 12px; border-radius: 8px; background: #0f172a; color: #a5f3fc; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; white-space: pre; overflow-x: auto; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// When a form has fields + validation + submit status, state becomes
+// a coupled little state machine. useReducer makes that explicit:
+// CHANGE_FIELD, SET_TOUCHED, RESET, SUBMIT_OK — one place to look.
+
+const { useReducer } = React;
+
+const initialState = {
+    values:  { name: "", email: "" },
+    touched: { name: false, email: false },
+    submitted: null,
+};
+
+function reducer(state, action) {
+    switch (action.type) {
+        case "field":
+            return { ...state, values: { ...state.values, [action.name]: action.value } };
+        case "touch":
+            return { ...state, touched: { ...state.touched, [action.name]: true } };
+        case "reset":
+            return initialState;
+        case "submitOk":
+            return { ...state, submitted: { ...state.values, at: new Date().toLocaleTimeString() } };
+        default:
+            return state;
+    }
+}
+
+function validate(v) {
+    const errors = {};
+    if (!v.name.trim()) errors.name = "Name is required.";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.email)) errors.email = "Enter a valid email.";
+    return errors;
+}
+
+function App() {
+    const [state, dispatch] = useReducer(reducer, initialState);
+    const errors = validate(state.values);
+    const isValid = Object.keys(errors).length === 0;
+
+    const show = (name) => (state.touched[name] || state.submitted) && errors[name];
+
+    return (
+        <div className="card">
+            <h1>Form as reducer — actions instead of setters</h1>
+
+            <form onSubmit={(e) => {
+                e.preventDefault();
+                dispatch({ type: "touch", name: "name" });
+                dispatch({ type: "touch", name: "email" });
+                if (isValid) dispatch({ type: "submitOk" });
+            }} noValidate>
+                <label>Name
+                    <input
+                        className={show("name") ? "invalid" : ""}
+                        value={state.values.name}
+                        onChange={(e) => dispatch({ type: "field", name: "name", value: e.target.value })}
+                        onBlur={() => dispatch({ type: "touch", name: "name" })}
+                    />
+                    {show("name") && <div className="err">{errors.name}</div>}
+                </label>
+
+                <label>Email
+                    <input
+                        className={show("email") ? "invalid" : ""}
+                        value={state.values.email}
+                        onChange={(e) => dispatch({ type: "field", name: "email", value: e.target.value })}
+                        onBlur={() => dispatch({ type: "touch", name: "email" })}
+                    />
+                    {show("email") && <div className="err">{errors.email}</div>}
+                </label>
+
+                <div className="actions">
+                    <button type="submit" disabled={!isValid}>Save</button>
+                    <button type="button" className="secondary"
+                            onClick={() => dispatch({ type: "reset" })}>Reset</button>
+                </div>
+            </form>
+
+            <div className="echo">{JSON.stringify(state, null, 2)}</div>
+
+            {state.submitted && (
+                <p className="muted">Submitted at {state.submitted.at}. Nothing is actually stored — demo.</p>
+            )}
+
+            <p className="muted">
+                Compare this with managing three <code>useState</code> hooks (values,
+                touched, submitted). Actions make intent obvious at the dispatch site.
+            </p>
+        </div>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

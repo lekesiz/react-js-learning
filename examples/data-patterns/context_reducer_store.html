@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Context + Reducer — global store</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 24px; color: #1f2937; transition: background 0.2s, color 0.2s; }
+        body[data-theme="dark"] { background: #0f172a; color: #e2e8f0; }
+        body[data-theme="light"] { background: #ffffff; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .card { border: 1px solid currentColor; border-radius: 10px; padding: 16px; max-width: 540px; opacity: 0.97; }
+        .pill { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 999px; font-size: 13px; border: 1px solid currentColor; margin-right: 6px; }
+        button { padding: 8px 14px; border: 1px solid currentColor; background: transparent; color: inherit; border-radius: 6px; cursor: pointer; font: inherit; margin-right: 6px; }
+        button:hover { opacity: 0.8; }
+        .muted { opacity: 0.7; font-size: 13px; margin-top: 10px; }
+        code { padding: 2px 6px; border-radius: 4px; background: rgba(127,127,127,0.15); font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// Pattern: a reducer lives at the top of the tree, state + dispatch are
+// exposed via Context, and any component can read or change state with
+// zero prop-drilling. This is the lightweight answer to Redux.
+
+const { useReducer, useContext, createContext, useEffect } = React;
+
+// ---- Reducer ------------------------------------------------------------
+const initialState = { theme: "light", user: null, notifications: 0 };
+
+function reducer(state, action) {
+    switch (action.type) {
+        case "toggleTheme":    return { ...state, theme: state.theme === "light" ? "dark" : "light" };
+        case "login":          return { ...state, user: action.user };
+        case "logout":         return { ...state, user: null };
+        case "notify":         return { ...state, notifications: state.notifications + 1 };
+        case "clearNotifs":    return { ...state, notifications: 0 };
+        default:               return state;
+    }
+}
+
+// ---- Contexts -----------------------------------------------------------
+const AppContext = createContext(null);
+
+function AppProvider({ children }) {
+    const [state, dispatch] = useReducer(reducer, initialState);
+    return <AppContext.Provider value={{ state, dispatch }}>{children}</AppContext.Provider>;
+}
+
+// ---- Consumers, nested at different depths ------------------------------
+function Navbar() {
+    const { state, dispatch } = useContext(AppContext);
+    return (
+        <div className="card" style={{ marginBottom: 12 }}>
+            <span className="pill">🎨 {state.theme}</span>
+            <span className="pill">🔔 {state.notifications}</span>
+            <span className="pill">👤 {state.user ? state.user.name : "guest"}</span>
+            <div style={{ marginTop: 10 }}>
+                <button onClick={() => dispatch({ type: "toggleTheme" })}>Toggle theme</button>
+                <button onClick={() => dispatch({ type: "notify" })}>Notify</button>
+                <button onClick={() => dispatch({ type: "clearNotifs" })}>Clear notifs</button>
+            </div>
+        </div>
+    );
+}
+
+function LoginWidget() {
+    const { state, dispatch } = useContext(AppContext);
+    if (state.user) {
+        return (
+            <div className="card">
+                <h1>Welcome, {state.user.name}</h1>
+                <button onClick={() => dispatch({ type: "logout" })}>Log out</button>
+            </div>
+        );
+    }
+    return (
+        <div className="card">
+            <h1>Please log in</h1>
+            <button onClick={() => dispatch({ type: "login", user: { name: "Mikail" } })}>Log in as Mikail</button>
+        </div>
+    );
+}
+
+function ThemeSync() {
+    const { state } = useContext(AppContext);
+    useEffect(() => { document.body.dataset.theme = state.theme; }, [state.theme]);
+    return null;
+}
+
+function App() {
+    return (
+        <AppProvider>
+            <ThemeSync />
+            <Navbar />
+            <LoginWidget />
+            <p className="muted">
+                Three separate components read the store with <code>useContext</code>.
+                Any of them can dispatch — the single reducer guarantees consistent
+                updates across the whole app.
+            </p>
+        </AppProvider>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

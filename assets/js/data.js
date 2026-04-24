@@ -801,6 +801,90 @@ window.CHAPTERS = [
       },
     ],
   },
+
+  {
+    id: "data-patterns",
+    number: 7,
+    title: "Data Patterns — useReducer, Context stores, Normalization",
+    tagline: "Scaling state without the pain: actions, stores, and flat shapes.",
+    description:
+      "Once an app has more than a handful of pieces of state, coupled useState hooks turn into a spider web. This chapter covers the three moves that keep state manageable at scale — useReducer (actions instead of setters), Context + Reducer (a lightweight global store), and normalization (byId / allIds + selectors) — and ends with a small CRUD app that wires them all together.",
+    icon: "database",
+    examples: [
+      {
+        slug: "usereducer-counter",
+        file: "useReducer_counter.html",
+        title: "useReducer — counter with action types",
+        description:
+          "The simplest possible reducer: a counter with `increment`, `decrement`, `add`, `reset` actions — and an action log that never lies.",
+        concepts: ["useReducer", "action types", "pure reducer"],
+      },
+      {
+        slug: "usereducer-todo-list",
+        file: "useReducer_todoList.html",
+        title: "useReducer — todo list (add / toggle / delete / filter)",
+        description:
+          "Four operations, one reducer. See how related state (todos, filter, nextId) stays in sync without juggling setters.",
+        concepts: ["useReducer", "todo", "filter"],
+      },
+      {
+        slug: "usereducer-form-state",
+        file: "useReducer_formState.html",
+        title: "useReducer — form state as actions",
+        description:
+          "A validated form with values, touched, and submitted driven by a reducer — cleaner than three separate useStates.",
+        concepts: ["useReducer", "form", "validation"],
+      },
+      {
+        slug: "usereducer-async-state",
+        file: "useReducer_asyncState.html",
+        title: "useReducer — async state machine (idle / loading / success / error)",
+        description:
+          "Encode the four states of any fetch as a state machine with legal transitions — impossible states become unrepresentable.",
+        concepts: ["useReducer", "state machine", "fetch"],
+      },
+      {
+        slug: "context-reducer-store",
+        file: "context_reducer_store.html",
+        title: "Context + Reducer — the global store pattern",
+        description:
+          "Reducer at the top, `{ state, dispatch }` shared via Context. Any component reads or changes the store with zero prop-drilling.",
+        concepts: ["Context", "useReducer", "global state"],
+      },
+      {
+        slug: "context-split-contexts",
+        file: "context_splitContexts.html",
+        title: "Split state/dispatch contexts — avoid wasted renders",
+        description:
+          "Put state and dispatch in separate Contexts so `memo`-wrapped dispatch-only components skip updates entirely.",
+        concepts: ["Context", "React.memo", "performance"],
+      },
+      {
+        slug: "normalization-byid-allids",
+        file: "normalization_byId_allIds.html",
+        title: "Normalization — `byId` + `allIds` shape",
+        description:
+          "Flatten nested arrays into a lookup table + an order array. O(1) lookups, precise updates, automatic dedup.",
+        concepts: ["normalization", "byId", "allIds"],
+      },
+      {
+        slug: "selectors-derived-state",
+        file: "selectors_derivedState.html",
+        title: "Selectors — derived state from the store",
+        description:
+          "Composable pure functions + `useMemo` turn raw store state into exactly the view each component needs.",
+        concepts: ["selectors", "useMemo", "derived state"],
+      },
+      {
+        slug: "crud-normalized-contacts",
+        file: "crud_normalizedContacts.html",
+        title: "Mini CRUD — normalized contacts app",
+        description:
+          "The whole chapter in one screen: Context + Reducer + normalized store + search / filter selectors, with add / update / delete wired end-to-end.",
+        concepts: ["CRUD", "Context", "useReducer", "normalization"],
+      },
+    ],
+  },
 ];
 
 // Flat list for search / next-prev navigation
