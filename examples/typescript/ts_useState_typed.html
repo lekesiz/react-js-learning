@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TypeScript — typed useState</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; max-width: 540px; background: #fff; }
+        input { width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font: inherit; margin-top: 4px; box-sizing: border-box; }
+        button { padding: 6px 12px; border: 1px solid #0369a1; background: #0369a1; color: #fff; border-radius: 6px; cursor: pointer; font: inherit; margin: 8px 6px 0 0; font-weight: 600; }
+        button.secondary { background: #fff; color: #0369a1; }
+        .kv { padding: 6px 10px; background: #f8fafc; border-radius: 6px; margin-top: 4px; font-size: 13px; font-family: 'JetBrains Mono', ui-monospace, monospace; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="typescript,react">
+// useState has two modes:
+//   1. Inferred: useState(0) -> state: number
+//   2. Explicit: useState<T>(initial) when T can't be inferred or is wider
+
+// --- 1. Inferred from initial value -------------------------------------
+function Counter() {
+    const [count, setCount] = React.useState(0); // inferred: number
+    return (
+        <div className="card">
+            <h2>Inferred — <code>const [count, setCount] = useState(0)</code></h2>
+            <div className="kv">count: {count} (typeof {typeof count})</div>
+            <button onClick={() => setCount((c) => c + 1)}>+1</button>
+        </div>
+    );
+}
+
+// --- 2. Explicit generic when TS can't infer the full type --------------
+interface User { id: number; name: string; }
+
+function UserPanel() {
+    // Pre-declare the initial value with its widened type so TS knows
+    // "this can become a User later". Using an explicit annotation here
+    // avoids a babel-standalone quirk with `as Union | Union` casts.
+    const initialUser: User | null = null;
+    const [user, setUser] = React.useState(initialUser);
+
+    return (
+        <div className="card" style={{ marginTop: 10 }}>
+            <h2>Explicit — <code>useState&lt;User | null&gt;(null)</code></h2>
+            <div className="kv">user: {user ? user.name : "(none)"}</div>
+            <button onClick={() => setUser({ id: 1, name: "Ada" })}>Log in Ada</button>
+            <button onClick={() => setUser({ id: 2, name: "Alan" })}>Log in Alan</button>
+            <button className="secondary" onClick={() => setUser(null)}>Sign out</button>
+            <p className="muted">
+                The null-union lets TS know "this can become a User later" and
+                `user?.name` is the right way to read it safely.
+            </p>
+        </div>
+    );
+}
+
+// --- 3. Union types for small enums -------------------------------------
+type Status = "idle" | "loading" | "success" | "error";
+const ALL_STATUSES: Status[] = ["idle", "loading", "success", "error"];
+
+function StatusWidget() {
+    const initialStatus: Status = "idle";
+    const [status, setStatus] = React.useState(initialStatus);
+    return (
+        <div className="card" style={{ marginTop: 10 }}>
+            <h2>Union — <code>useState&lt;"idle"|"loading"|...&gt;("idle")</code></h2>
+            <div className="kv">status: "{status}"</div>
+            {ALL_STATUSES.map((s) => (
+                <button key={s} className="secondary" onClick={() => setStatus(s)}>{s}</button>
+            ))}
+            <p className="muted">
+                <code>setStatus("DONE")</code> would be a compile error — unions
+                keep string-based states honest.
+            </p>
+        </div>
+    );
+}
+
+function App() {
+    return <><h1>useState with types</h1><Counter /><UserPanel /><StatusWidget /></>;
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

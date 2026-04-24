@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Testing — mocking fetch</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; max-width: 600px; background: #fff; margin-bottom: 10px; }
+        .title { font-size: 13px; font-weight: 600; color: #334155; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
+        button { padding: 8px 14px; border: 1px solid #0369a1; background: #0369a1; color: #fff; border-radius: 6px; cursor: pointer; font: inherit; font-weight: 600; }
+        .result { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; padding: 6px 10px; border-radius: 6px; margin-top: 4px; }
+        .pass { background: #d1fae5; color: #065f46; }
+        .fail { background: #fee2e2; color: #991b1b; }
+        .summary { font-weight: 700; font-size: 14px; margin-top: 10px; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="component-root" class="card"></div>
+<div id="tests-root"></div>
+
+<script type="text/babel">
+// --- COMPONENT ----------------------------------------------------------
+// A component that calls window.fetch(). In tests we replace window.fetch
+// with a stub that returns a known response — no real network hit.
+
+function Todos() {
+    const [state, setState] = React.useState({ status: "idle", todos: [], error: null });
+
+    return (
+        <div>
+            <button onClick={async () => {
+                setState({ status: "loading", todos: [], error: null });
+                try {
+                    const res = await fetch("/api/todos");
+                    if (!res.ok) throw new Error("HTTP " + res.status);
+                    const todos = await res.json();
+                    setState({ status: "success", todos, error: null });
+                } catch (e) {
+                    setState({ status: "error", todos: [], error: e.message });
+                }
+            }}>Load todos</button>
+
+            {state.status === "loading" && <p data-testid="status">loading</p>}
+            {state.status === "error"   && <p data-testid="status">error: {state.error}</p>}
+            {state.status === "success" && (
+                <ul data-testid="list">{state.todos.map((t) => <li key={t.id}>{t.title}</li>)}</ul>
+            )}
+        </div>
+    );
+}
+
+ReactDOM.render(
+    <div><div className="title">Component under test</div><Todos /></div>,
+    document.getElementById("component-root")
+);
+
+// --- HARNESS ------------------------------------------------------------
+const __results = [];
+function describe(n,f){__results.push({type:"describe",name:n});f();}
+function it(n,f){try{const r=f();if(r&&r.then)return r.then(()=>__results.push({type:"pass",name:n})).catch(e=>__results.push({type:"fail",name:n,err:e.message}));__results.push({type:"pass",name:n})}catch(e){__results.push({type:"fail",name:n,err:e.message})}}
+function expect(a){return{
+    toBe(b){if(a!==b)throw new Error(`expected ${JSON.stringify(a)} toBe ${JSON.stringify(b)}`)},
+    toContain(s){const t=a&&a.textContent!=null?a.textContent:String(a);if(!t.includes(s))throw new Error(`expected "${t}" to contain "${s}"`)},
+    toBeTruthy(){if(!a)throw new Error("expected truthy")},
+    toHaveLength(n){if(a.length!==n)throw new Error(`expected length ${n}, got ${a.length}`)},
+}}
+function render(el){const c=document.createElement("div");ReactDOM.render(el,c);return{container:c,unmount:()=>ReactDOM.unmountComponentAtNode(c)}}
+const getByTestId = (c, id) => c.querySelector(`[data-testid="${id}"]`);
+const getByText = (c, text) => [...c.querySelectorAll("*")]
+    .find((n) => n.childNodes.length === 1 && n.firstChild.nodeType === 3 && n.textContent.trim() === text);
+const fireEvent = { click(el) { el.dispatchEvent(new MouseEvent("click", { bubbles: true })); } };
+async function waitFor(cb, { timeout = 1500, interval = 20 } = {}) {
+    const start = Date.now(); let lastErr;
+    while (Date.now() - start < timeout) { try { cb(); return; } catch (e) { lastErr = e; }
+        await new Promise((r) => setTimeout(r, interval)); }
+    throw lastErr || new Error("waitFor: timed out");
+}
+
+// fetchMock: replace window.fetch temporarily. In Vitest: vi.stubGlobal / vi.fn().
+function installFetchMock(handler) {
+    const original = window.fetch;
+    const calls = [];
+    window.fetch = async (url, init) => {
+        calls.push({ url, init });
+        const { status = 200, json = null, text = "" } = handler(url, init) || {};
+        return {
+            ok: status >= 200 && status < 300,
+            status,
+            json: async () => json,
+            text: async () => text,
+        };
+    };
+    return { calls, restore: () => { window.fetch = original; } };
+}
+
+// --- TESTS --------------------------------------------------------------
+describe("<Todos /> + mocked fetch", () => {
+    it("renders the list on success", async () => {
+        const { calls, restore } = installFetchMock(() => ({
+            status: 200,
+            json: [{ id: 1, title: "Wake up" }, { id: 2, title: "Write docs" }],
+        }));
+        const { container, unmount } = render(<Todos />);
+        fireEvent.click(getByText(container, "Load todos"));
+        await waitFor(() => expect(getByTestId(container, "list")).toBeTruthy());
+        expect(getByTestId(container, "list").querySelectorAll("li")).toHaveLength(2);
+        expect(getByTestId(container, "list")).toContain("Wake up");
+        expect(calls).toHaveLength(1);
+        expect(calls[0].url).toBe("/api/todos");
+        unmount();
+        restore();
+    });
+
+    it("shows the error branch on HTTP 500", async () => {
+        const { restore } = installFetchMock(() => ({ status: 500, json: null }));
+        const { container, unmount } = render(<Todos />);
+        fireEvent.click(getByText(container, "Load todos"));
+        await waitFor(() => expect(getByTestId(container, "status")).toContain("error: HTTP 500"));
+        unmount();
+        restore();
+    });
+});
+
+// --- REPORT -------------------------------------------------------------
+setTimeout(() => {
+    const root = document.getElementById("tests-root");
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `<div class="title">Test results</div>`;
+    let pass = 0, fail = 0;
+    for (const r of __results) {
+        if (r.type === "describe") {
+            const h = document.createElement("div");
+            h.style.cssText = "font-weight:600;color:#0f172a;margin:10px 0 4px";
+            h.textContent = r.name;
+            card.appendChild(h);
+        } else {
+            const row = document.createElement("div");
+            row.className = "result " + (r.type === "pass" ? "pass" : "fail");
+            row.textContent = (r.type === "pass" ? "✔ " : "✖ ") + r.name + (r.err ? " — " + r.err : "");
+            card.appendChild(row);
+            r.type === "pass" ? pass++ : fail++;
+        }
+    }
+    const sum = document.createElement("div");
+    sum.className = "summary";
+    sum.style.color = fail === 0 ? "#065f46" : "#991b1b";
+    sum.textContent = `${pass} passed, ${fail} failed`;
+    card.appendChild(sum);
+    const note = document.createElement("p");
+    note.className = "muted";
+    note.innerHTML = 'In Vitest: <code>vi.stubGlobal("fetch", vi.fn(...))</code>. In Jest: <code>jest.spyOn(global, "fetch")</code>. Same idea — swap the global, assert the calls.';
+    card.appendChild(note);
+    root.appendChild(card);
+}, 2500);
+</script>
+</body>
+</html>

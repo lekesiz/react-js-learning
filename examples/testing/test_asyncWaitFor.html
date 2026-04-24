@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Testing — async waitFor</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; max-width: 600px; background: #fff; margin-bottom: 10px; }
+        .title { font-size: 13px; font-weight: 600; color: #334155; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
+        button { padding: 8px 14px; border: 1px solid #0369a1; background: #0369a1; color: #fff; border-radius: 6px; cursor: pointer; font: inherit; font-weight: 600; }
+        .result { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; padding: 6px 10px; border-radius: 6px; margin-top: 4px; }
+        .pass { background: #d1fae5; color: #065f46; }
+        .fail { background: #fee2e2; color: #991b1b; }
+        .summary { font-weight: 700; font-size: 14px; margin-top: 10px; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="component-root" class="card"></div>
+<div id="tests-root"></div>
+
+<script type="text/babel">
+// --- COMPONENT ----------------------------------------------------------
+// Fake async "service" we can test against. Returns after a delay.
+function delayed(value, ms = 180) {
+    return new Promise((resolve) => setTimeout(() => resolve(value), ms));
+}
+
+function LoadUsername({ load = () => delayed("Ada Lovelace") }) {
+    const [state, setState] = React.useState({ status: "idle", name: null });
+
+    return (
+        <div>
+            <button onClick={async () => {
+                setState({ status: "loading", name: null });
+                const name = await load();
+                setState({ status: "success", name });
+            }}>Load user</button>
+
+            {state.status === "loading" && <p data-testid="loading">Loading…</p>}
+            {state.status === "success" && <p data-testid="name">Hello, {state.name}!</p>}
+        </div>
+    );
+}
+
+ReactDOM.render(
+    <div><div className="title">Component under test</div><LoadUsername /></div>,
+    document.getElementById("component-root")
+);
+
+// --- HARNESS ------------------------------------------------------------
+const __results = [];
+function describe(n,f){__results.push({type:"describe",name:n});f();}
+function it(n,f){try{const r=f();if(r&&r.then)return r.then(()=>__results.push({type:"pass",name:n})).catch(e=>__results.push({type:"fail",name:n,err:e.message}));__results.push({type:"pass",name:n})}catch(e){__results.push({type:"fail",name:n,err:e.message})}}
+function expect(a){return{
+    toBe(b){if(a!==b)throw new Error(`expected ${JSON.stringify(a)} toBe ${JSON.stringify(b)}`)},
+    toContain(s){const t=a&&a.textContent!=null?a.textContent:String(a);if(!t.includes(s))throw new Error(`expected "${t}" to contain "${s}"`)},
+    toBeTruthy(){if(!a)throw new Error(`expected value to be truthy, got ${JSON.stringify(a)}`)},
+    toBeNull(){if(a!==null)throw new Error(`expected null, got ${JSON.stringify(a)}`)},
+}}
+function render(el){const c=document.createElement("div");ReactDOM.render(el,c);return{container:c,unmount:()=>ReactDOM.unmountComponentAtNode(c)}}
+const getByTestId = (c, id) => c.querySelector(`[data-testid="${id}"]`);
+const queryByTestId = (c, id) => c.querySelector(`[data-testid="${id}"]`);
+const getByText = (c, text) => [...c.querySelectorAll("*")]
+    .find((n) => n.childNodes.length === 1 && n.firstChild.nodeType === 3 && n.textContent.trim() === text);
+const fireEvent = {
+    click(el) { el.dispatchEvent(new MouseEvent("click", { bubbles: true })); },
+};
+
+// waitFor: retry the callback until it no longer throws, or timeout.
+async function waitFor(cb, { timeout = 1500, interval = 30 } = {}) {
+    const start = Date.now();
+    let lastErr;
+    while (Date.now() - start < timeout) {
+        try { cb(); return; } catch (e) { lastErr = e; }
+        await new Promise((r) => setTimeout(r, interval));
+    }
+    throw lastErr || new Error("waitFor: timed out");
+}
+
+// --- TESTS --------------------------------------------------------------
+describe("<LoadUsername />", () => {
+    it("shows a loading indicator after the button is clicked", async () => {
+        const { container, unmount } = render(<LoadUsername />);
+        expect(queryByTestId(container, "loading")).toBeNull();
+        fireEvent.click(getByText(container, "Load user"));
+        expect(getByTestId(container, "loading")).toBeTruthy();
+        unmount();
+    });
+
+    it("replaces the indicator with the fetched name", async () => {
+        const { container, unmount } = render(<LoadUsername load={() => delayed("Grace Hopper")} />);
+        fireEvent.click(getByText(container, "Load user"));
+        await waitFor(() => {
+            expect(getByTestId(container, "name")).toContain("Grace Hopper");
+        });
+        expect(queryByTestId(container, "loading")).toBeNull();
+        unmount();
+    });
+});
+
+// --- REPORT -------------------------------------------------------------
+// Wait for async tests to complete before showing the report.
+function report() {
+    const root = document.getElementById("tests-root");
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `<div class="title">Test results</div>`;
+    let pass = 0, fail = 0;
+    for (const r of __results) {
+        if (r.type === "describe") {
+            const h = document.createElement("div");
+            h.style.cssText = "font-weight:600;color:#0f172a;margin:10px 0 4px";
+            h.textContent = r.name;
+            card.appendChild(h);
+        } else {
+            const row = document.createElement("div");
+            row.className = "result " + (r.type === "pass" ? "pass" : "fail");
+            row.textContent = (r.type === "pass" ? "✔ " : "✖ ") + r.name + (r.err ? " — " + r.err : "");
+            card.appendChild(row);
+            r.type === "pass" ? pass++ : fail++;
+        }
+    }
+    const sum = document.createElement("div");
+    sum.className = "summary";
+    sum.style.color = fail === 0 ? "#065f46" : "#991b1b";
+    sum.textContent = `${pass} passed, ${fail} failed`;
+    card.appendChild(sum);
+    const note = document.createElement("p");
+    note.className = "muted";
+    note.innerHTML = '<code>waitFor</code> keeps re-running its callback until the assertion passes (or times out) — the async-test recipe used by @testing-library.';
+    card.appendChild(note);
+    root.appendChild(card);
+}
+// Give async tests time to finish.
+setTimeout(report, 2500);
+</script>
+</body>
+</html>

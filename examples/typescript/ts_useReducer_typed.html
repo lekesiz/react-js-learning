@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TypeScript — typed useReducer</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; max-width: 560px; background: #fff; }
+        input[type="text"] { flex: 1; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font: inherit; }
+        form { display: flex; gap: 6px; margin-bottom: 10px; }
+        button { padding: 8px 14px; border: 1px solid #0369a1; background: #0369a1; color: #fff; border-radius: 6px; cursor: pointer; font: inherit; font-weight: 600; }
+        .item { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border: 1px solid #e5e7eb; border-radius: 6px; margin-top: 4px; }
+        .item input { margin: 0; }
+        .item span { flex: 1; }
+        .item.done span { text-decoration: line-through; color: #9ca3af; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="typescript,react">
+// Reducers are where TypeScript really earns its keep. The discriminated
+// union for Action makes misspelled types and missing payloads compile errors.
+
+interface Todo { id: number; text: string; done: boolean; }
+
+interface State { todos: Todo[]; nextId: number; }
+
+type Action =
+    | { type: "add";    text: string }
+    | { type: "toggle"; id: number }
+    | { type: "remove"; id: number }
+    | { type: "clearDone" };
+
+const initial: State = { todos: [{ id: 1, text: "Learn typed reducers", done: false }], nextId: 2 };
+
+function reducer(state: State, action: Action): State {
+    switch (action.type) {
+        case "add":
+            if (!action.text.trim()) return state;
+            return {
+                todos: [...state.todos, { id: state.nextId, text: action.text, done: false }],
+                nextId: state.nextId + 1,
+            };
+        case "toggle":
+            return { ...state, todos: state.todos.map((t) => (t.id === action.id ? { ...t, done: !t.done } : t)) };
+        case "remove":
+            return { ...state, todos: state.todos.filter((t) => t.id !== action.id) };
+        case "clearDone":
+            return { ...state, todos: state.todos.filter((t) => !t.done) };
+        default: {
+            // Exhaustiveness: TS errors if we add a new action type and forget a case.
+            const _exhaustive: never = action;
+            return state;
+        }
+    }
+}
+
+function App() {
+    const [state, dispatch] = React.useReducer(reducer, initial);
+    const [draft, setDraft] = React.useState("");
+
+    return (
+        <div className="card">
+            <h1>Typed reducer — exhaustive actions</h1>
+
+            <form onSubmit={(e) => { e.preventDefault(); dispatch({ type: "add", text: draft }); setDraft(""); }}>
+                <input type="text" value={draft} onChange={(e) => setDraft(e.target.value)}
+                       placeholder="New todo" />
+                <button type="submit">Add</button>
+            </form>
+
+            {state.todos.map((t) => (
+                <div key={t.id} className={"item " + (t.done ? "done" : "")}>
+                    <input type="checkbox" checked={t.done} onChange={() => dispatch({ type: "toggle", id: t.id })} />
+                    <span>{t.text}</span>
+                    <button onClick={() => dispatch({ type: "remove", id: t.id })}
+                            style={{ background: "#fff", color: "#dc2626", border: "1px solid #fca5a5" }}>×</button>
+                </div>
+            ))}
+
+            <p className="muted">
+                <code>dispatch({"{ type: \"tOggle\", id: 1 }"})</code> is a compile
+                error (typo). Same for <code>dispatch({"{ type: \"add\" }"})</code>
+                without a <code>text</code>. The <code>never</code> branch catches
+                the day you add a new action and forget a case.
+            </p>
+        </div>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

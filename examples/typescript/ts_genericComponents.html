@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TypeScript — generic components</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; max-width: 600px; background: #fff; margin-bottom: 10px; }
+        h2 { font-size: 15px; margin: 6px 0; color: #0369a1; }
+        .row { padding: 6px 10px; border-bottom: 1px solid #f1f5f9; font-size: 13px; display: flex; justify-content: space-between; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="typescript,react">
+// A generic component is parameterized by a type. Same component, different
+// item shapes — with full autocomplete + type safety on both sides.
+
+interface ListProps<T> {
+    items: T[];
+    renderItem: (item: T) => React.ReactNode;
+    emptyText?: string;
+}
+
+// Note the <T,> (the trailing comma) — in .tsx files, TS distinguishes
+// generic arrows from JSX opening tags via that comma.
+const List = <T,>({ items, renderItem, emptyText = "No items." }: ListProps<T>) => {
+    if (items.length === 0) return <div className="muted">{emptyText}</div>;
+    return <div>{items.map((it, i) => <React.Fragment key={i}>{renderItem(it)}</React.Fragment>)}</div>;
+};
+
+// --- Consumer types -----------------------------------------------------
+interface Book  { id: number; title: string; pages: number; }
+interface Sport { id: number; name: string; players: number; }
+
+const BOOKS: Book[] = [
+    { id: 1, title: "The Pragmatic Programmer", pages: 320 },
+    { id: 2, title: "Designing Data-Intensive Applications", pages: 616 },
+    { id: 3, title: "The Mythical Man-Month", pages: 322 },
+];
+
+const SPORTS: Sport[] = [
+    { id: 1, name: "Football", players: 11 },
+    { id: 2, name: "Chess",    players: 2  },
+    { id: 3, name: "Volleyball", players: 6 },
+];
+
+// Pre-declared empty list to avoid a cast inside JSX (babel-standalone chokes on
+// `items={[] as Sport[]}`).
+const NO_SPORTS: Sport[] = [];
+
+// --- App ----------------------------------------------------------------
+function App() {
+    return (
+        <div>
+            <h1>Generic components — one list, any item shape</h1>
+
+            <div className="card">
+                <h2>List of Book</h2>
+                {/* TS infers T = Book. Inside renderItem, `b` has .title / .pages. */}
+                <List
+                    items={BOOKS}
+                    renderItem={(b) => <div className="row"><span>{b.title}</span><span>{b.pages} pages</span></div>}
+                />
+            </div>
+
+            <div className="card">
+                <h2>List of Sport</h2>
+                {/* Same component, T = Sport. `s` has .name / .players, not .title. */}
+                <List
+                    items={SPORTS}
+                    renderItem={(s) => <div className="row"><span>{s.name}</span><span>{s.players} players</span></div>}
+                />
+            </div>
+
+            <div className="card">
+                <h2>Empty list + fallback</h2>
+                {/* With T inferred from `items`, the empty-state message renders. */}
+                <List
+                    items={NO_SPORTS}
+                    renderItem={(s) => <div>{s.name}</div>}
+                    emptyText="No sports loaded yet."
+                />
+            </div>
+
+            <p className="muted">
+                Swap <code>renderItem={"(s) => s.name"}</code> for <code>s.title</code>
+                in the Sports list and TS errors before runtime. The same component
+                catches mistakes independently for every usage site. (In <code>.tsx</code>
+                you can also pin the generic explicitly — <code>&lt;List&lt;Sport&gt;&gt;</code>
+                — but that syntax needs a full TypeScript compiler; babel-standalone
+                strips it out.)
+            </p>
+        </div>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

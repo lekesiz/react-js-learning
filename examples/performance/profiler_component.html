@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>React.Profiler — measure renders programmatically</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; max-width: 560px; background: #fff; }
+        button { padding: 8px 14px; border: 1px solid #0369a1; background: #0369a1; color: #fff; border-radius: 6px; cursor: pointer; font: inherit; font-weight: 600; margin-right: 6px; }
+        .log { margin-top: 12px; padding: 10px 12px; border-radius: 8px; background: #0f172a; color: #a5f3fc; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; max-height: 220px; overflow-y: auto; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// <React.Profiler id="..." onRender={fn}> calls `fn` with timing info for
+// every commit inside it. It's what the React DevTools Profiler uses,
+// but you can also collect the numbers yourself — useful for CI smoke tests
+// or local "why-is-this-slow" experiments.
+
+const { useState, Profiler } = React;
+
+function SlowWork() {
+    const t0 = performance.now();
+    while (performance.now() - t0 < 25) {}  // ~25ms of busy work
+    return <p>Heavy child rendered at {new Date().toLocaleTimeString()}</p>;
+}
+
+function App() {
+    const [n, setN] = useState(0);
+    const [log, setLog] = useState([]);
+
+    // actualDuration = what this commit took in ms (we've simulated 25ms+).
+    const onRender = (id, phase, actualDuration) => {
+        setLog((l) => [
+            `${new Date().toLocaleTimeString()} · [${id}] ${phase.padEnd(5)} — ${actualDuration.toFixed(1)} ms`,
+            ...l,
+        ].slice(0, 12));
+    };
+
+    return (
+        <div className="card">
+            <h1>React.Profiler — measure a commit</h1>
+
+            <button onClick={() => setN((x) => x + 1)}>Re-render ({n})</button>
+            <button style={{ background: "#fff", color: "#0369a1" }}
+                    onClick={() => setLog([])}>Clear log</button>
+
+            <Profiler id="heavy-section" onRender={onRender}>
+                <SlowWork />
+            </Profiler>
+
+            <div className="log">
+                {log.length === 0 ? "// commits will appear here" : log.map((l, i) => <div key={i}>{l}</div>)}
+            </div>
+
+            <p className="muted">
+                Each click triggers a commit; the <code>onRender</code> callback
+                receives the <em>actualDuration</em> — the time the subtree took.
+                Wrap a section you want to measure and watch for regressions.
+            </p>
+        </div>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

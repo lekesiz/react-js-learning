@@ -46,7 +46,34 @@
     zap: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-6 w-6"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`,
     route: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6"><circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/></svg>`,
     database: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v6c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/><path d="M3 11v6c0 1.66 4.03 3 9 3s9-1.34 9-3v-6"/></svg>`,
+    gauge: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6"><path d="M12 14l4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg>`,
+    flask: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6"><path d="M9 3h6v6l5 9a2 2 0 0 1-1.79 2.95H5.79A2 2 0 0 1 4 18l5-9V3z"/><path d="M8 13h8"/></svg>`,
+    typescript: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-6 w-6"><path d="M2 12c0-4.71 0-7.07 1.46-8.54C4.93 2 7.29 2 12 2s7.07 0 8.54 1.46C22 4.93 22 7.29 22 12s0 7.07-1.46 8.54C19.07 22 16.71 22 12 22s-7.07 0-8.54-1.46C2 19.07 2 16.71 2 12zm7.8-.5H7.3v1.4h1.5V18h1.5v-5.1h1.5v-1.4zm3.96 5.74c.47.21 1.02.31 1.66.31 1.49 0 2.58-.83 2.58-2.16 0-1.08-.66-1.6-1.79-2.03l-.34-.13c-.56-.2-.82-.39-.82-.78 0-.33.25-.58.62-.58.35 0 .6.14.82.58l1.15-.74c-.38-.78-1.1-1.09-1.97-1.09-1.25 0-2.06.8-2.06 1.86 0 1.05.6 1.55 1.65 1.96l.37.14c.6.24.96.39.96.81 0 .39-.36.67-.92.67-.66 0-1.04-.34-1.32-.82l-1.17.68c.34.73 1.03 1.33 1.86 1.33z"/></svg>`,
   };
+
+  // ----- difficulty / time badge helper ------------------------
+  const DIFF_COLOR = {
+    beginner:     { bg: "bg-emerald-100 text-emerald-700 border-emerald-200", dot: "bg-emerald-500", darkBg: "dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-900" },
+    intermediate: { bg: "bg-amber-100 text-amber-700 border-amber-200",       dot: "bg-amber-500",   darkBg: "dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-900" },
+    advanced:     { bg: "bg-rose-100 text-rose-700 border-rose-200",          dot: "bg-rose-500",    darkBg: "dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-900" },
+  };
+  function diffBadge(level) {
+    const c = DIFF_COLOR[level] || DIFF_COLOR.intermediate;
+    return h("span", { class: `inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium ${c.bg} ${c.darkBg}` },
+      h("span", { class: `inline-block h-1.5 w-1.5 rounded-full ${c.dot}` }),
+      level);
+  }
+  function timeBadge(minutes) {
+    return h("span", { class: "inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-300" },
+      h("span", { html: `<svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>` }),
+      `${minutes} min`);
+  }
+  function renderBadges(ex) {
+    return h("div", { class: "flex flex-wrap items-center gap-1.5" },
+      diffBadge(ex.difficulty),
+      timeBadge(ex.minutes),
+    );
+  }
 
   // ----- theme toggle ------------------------------------------
   const THEME_KEY = "rjs-theme";
@@ -242,37 +269,96 @@
       )
     );
 
-    // Example list
+    // Examples (with chapter-local difficulty filter) ----------------------
+    const examplesFromManifest = ALL_EXAMPLES.filter((e) => e.chapterId === chapter.id);
+
+    const counts = examplesFromManifest.reduce((a, e) => (a[e.difficulty] = (a[e.difficulty] || 0) + 1, a), {});
+    let activeFilter = "all";
+
+    const listWrap = h("ol", { class: "space-y-3" });
+    const countsLabel = h("h2", { class: "text-lg font-semibold text-slate-900 dark:text-white" }, `${examplesFromManifest.length} examples`);
+
+    function renderExampleList() {
+      listWrap.innerHTML = "";
+      const filtered = activeFilter === "all"
+        ? examplesFromManifest
+        : examplesFromManifest.filter((e) => e.difficulty === activeFilter);
+
+      countsLabel.textContent = `${filtered.length} of ${examplesFromManifest.length} example${examplesFromManifest.length === 1 ? "" : "s"}`;
+
+      if (filtered.length === 0) {
+        listWrap.append(h("li", { class: "rounded-xl border border-dashed border-slate-200 p-6 text-center text-sm text-slate-500 dark:border-slate-800 dark:text-slate-400" },
+          `No "${activeFilter}" examples in this chapter.`));
+        return;
+      }
+
+      filtered.forEach((ex, idx) => {
+        listWrap.append(h("li", {},
+          h("a", {
+            href: `#/example/${chapter.id}/${ex.slug}`,
+            class: "card flex items-start gap-4 p-4 sm:p-5",
+          },
+            h("div", { class: "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300" },
+              String(idx + 1).padStart(2, "0"),
+            ),
+            h("div", { class: "min-w-0 flex-1" },
+              h("div", { class: "flex flex-wrap items-start justify-between gap-2" },
+                h("h3", { class: "font-semibold text-slate-900 dark:text-white" }, ex.title),
+                renderBadges(ex),
+              ),
+              h("p", { class: "mt-1 text-sm text-slate-600 dark:text-slate-300" }, ex.description),
+              ex.concepts && ex.concepts.length
+                ? h("div", { class: "mt-2 flex flex-wrap gap-1.5" }, ...ex.concepts.map((c) => h("span", { class: "concept-tag" }, c)))
+                : null,
+            ),
+            h("div", { class: "shrink-0 self-center text-slate-400", html: `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>` }),
+          )
+        ));
+      });
+    }
+
+    // Filter bar
+    const filterChip = (level, label) => {
+      const active = activeFilter === level;
+      return h("button", {
+        class: `filter-chip ${active ? "active" : ""}`,
+        onclick: () => {
+          activeFilter = level;
+          [...filterBar.querySelectorAll("button")].forEach((b) => b.classList.remove("active"));
+          filterChipEls[level].classList.add("active");
+          renderExampleList();
+        },
+      }, label);
+    };
+
+    const filterChipEls = {
+      all:          h("button", { class: "filter-chip active", onclick: null }, `All · ${examplesFromManifest.length}`),
+      beginner:     h("button", { class: "filter-chip", onclick: null }, `Beginner · ${counts.beginner || 0}`),
+      intermediate: h("button", { class: "filter-chip", onclick: null }, `Intermediate · ${counts.intermediate || 0}`),
+      advanced:     h("button", { class: "filter-chip", onclick: null }, `Advanced · ${counts.advanced || 0}`),
+    };
+    for (const [level, el] of Object.entries(filterChipEls)) {
+      el.addEventListener("click", () => {
+        activeFilter = level;
+        Object.values(filterChipEls).forEach((b) => b.classList.remove("active"));
+        el.classList.add("active");
+        renderExampleList();
+      });
+    }
+
+    const filterBar = h("div", { class: "flex flex-wrap items-center gap-1.5" },
+      ...Object.values(filterChipEls));
+
     app.append(
       h("div", { class: "mt-10" },
-        h("div", { class: "mb-4 flex items-baseline justify-between" },
-          h("h2", { class: "text-lg font-semibold text-slate-900 dark:text-white" }, `${chapter.examples.length} examples`),
-          h("p", { class: "text-sm text-slate-500 dark:text-slate-400" }, "Follow top → bottom for the smoothest path."),
+        h("div", { class: "mb-4 flex flex-wrap items-baseline justify-between gap-3" },
+          countsLabel,
+          filterBar,
         ),
-        h("ol", { class: "space-y-3" },
-          ...chapter.examples.map((ex, idx) =>
-            h("li", {},
-              h("a", {
-                href: `#/example/${chapter.id}/${ex.slug}`,
-                class: "card flex items-start gap-4 p-4 sm:p-5",
-              },
-                h("div", { class: "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300" },
-                  String(idx + 1).padStart(2, "0"),
-                ),
-                h("div", { class: "min-w-0 flex-1" },
-                  h("h3", { class: "font-semibold text-slate-900 dark:text-white" }, ex.title),
-                  h("p", { class: "mt-1 text-sm text-slate-600 dark:text-slate-300" }, ex.description),
-                  ex.concepts && ex.concepts.length
-                    ? h("div", { class: "mt-2 flex flex-wrap gap-1.5" }, ...ex.concepts.map((c) => h("span", { class: "concept-tag" }, c)))
-                    : null,
-                ),
-                h("div", { class: "shrink-0 self-center text-slate-400", html: `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>` }),
-              )
-            )
-          )
-        ),
+        listWrap,
       )
     );
+    renderExampleList();
 
     // Chapter nav
     const idx = CHAPTERS.indexOf(chapter);
@@ -297,11 +383,11 @@
   // ----- EXAMPLE VIEWER ----------------------------------------
   async function renderExample(chapterId, slug) {
     const chapter = CHAPTERS.find((c) => c.id === chapterId);
-    const ex = chapter && chapter.examples.find((e) => e.slug === slug);
+    const flatIdx = ALL_EXAMPLES.findIndex((e) => e.chapterId === chapterId && e.slug === slug);
+    const ex = flatIdx >= 0 ? ALL_EXAMPLES[flatIdx] : null;
     if (!chapter || !ex) return renderNotFound();
 
     const path = `examples/${chapter.id}/${ex.file}`;
-    const flatIdx = ALL_EXAMPLES.findIndex((e) => e.chapterId === chapter.id && e.slug === ex.slug);
     const prev = flatIdx > 0 ? ALL_EXAMPLES[flatIdx - 1] : null;
     const next = flatIdx < ALL_EXAMPLES.length - 1 ? ALL_EXAMPLES[flatIdx + 1] : null;
 
@@ -320,7 +406,8 @@
     app.append(
       h("header", { class: "mt-4" },
         h("h1", { class: "text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-white" }, ex.title),
-        h("p", { class: "mt-2 max-w-3xl text-slate-600 dark:text-slate-300" }, ex.description),
+        h("div", { class: "mt-3" }, renderBadges(ex)),
+        h("p", { class: "mt-3 max-w-3xl text-slate-600 dark:text-slate-300" }, ex.description),
         ex.concepts && ex.concepts.length
           ? h("div", { class: "mt-3 flex flex-wrap gap-1.5" }, ...ex.concepts.map((c) => h("span", { class: "concept-tag" }, c)))
           : null,
@@ -430,6 +517,148 @@
       )
     );
   }
+
+  // ----- COMMAND PALETTE (Cmd+K / Ctrl+K) ----------------------
+  function setupPalette() {
+    const overlay = h("div", { class: "palette-overlay", role: "dialog", "aria-label": "Search examples" });
+    const input   = h("input", {
+      type: "search",
+      class: "palette-input",
+      placeholder: `Search ${ALL_EXAMPLES.length} examples…  (Esc to close)`,
+      autocomplete: "off",
+      spellcheck: "false",
+    });
+    const results = h("ul", { class: "palette-results", role: "listbox" });
+    const footer  = h("div", { class: "palette-footer" },
+      h("span", {}, h("kbd", {}, "↑"), h("kbd", {}, "↓"), " navigate · ", h("kbd", {}, "↵"), " open · ", h("kbd", {}, "Esc"), " close"),
+      h("span", {}, `${ALL_EXAMPLES.length} examples`),
+    );
+    const panel   = h("div", { class: "palette-panel" },
+      h("div", { class: "palette-input-wrap" },
+        h("span", { class: "palette-search-icon", html: `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>` }),
+        input,
+      ),
+      results,
+      footer,
+    );
+    overlay.append(panel);
+    document.body.append(overlay);
+
+    let selectedIndex = 0;
+    let currentMatches = [];
+
+    function score(ex, terms) {
+      let s = 0;
+      const hay = (ex.title + " " + ex.description + " " + (ex.concepts || []).join(" ") + " " + ex.chapterTitle).toLowerCase();
+      for (const t of terms) {
+        if (!t) continue;
+        if (hay.includes(t)) s += 1;
+        if (ex.title.toLowerCase().includes(t)) s += 3;
+        if ((ex.concepts || []).some((c) => c.toLowerCase().includes(t))) s += 2;
+      }
+      return s;
+    }
+
+    function renderResults(query) {
+      const q = query.trim().toLowerCase();
+      const terms = q.split(/\s+/).filter(Boolean);
+      const list = terms.length === 0
+        ? ALL_EXAMPLES.slice(0, 14)
+        : ALL_EXAMPLES.map((ex) => ({ ex, s: score(ex, terms) }))
+            .filter((x) => x.s > 0)
+            .sort((a, b) => b.s - a.s)
+            .slice(0, 20)
+            .map((x) => x.ex);
+
+      currentMatches = list;
+      if (selectedIndex >= list.length) selectedIndex = 0;
+
+      results.innerHTML = "";
+      if (list.length === 0) {
+        results.append(h("li", { class: "palette-empty" },
+          `No matches for "${query}". Try a concept like "useReducer" or "fetch".`));
+        return;
+      }
+      list.forEach((ex, i) => {
+        const li = h("li", {
+          class: "palette-item" + (i === selectedIndex ? " active" : ""),
+          role: "option",
+          "data-index": String(i),
+          onclick: () => goTo(ex),
+          onmouseenter: () => {
+            selectedIndex = i;
+            [...results.querySelectorAll(".palette-item")].forEach((n, k) => n.classList.toggle("active", k === i));
+          },
+        },
+          h("div", { class: "palette-item-main" },
+            h("div", { class: "palette-item-title" }, ex.title),
+            h("div", { class: "palette-item-meta" },
+              h("span", { class: "palette-chapter" }, `Ch. ${ex.chapterNumber} · ${ex.chapterTitle.split("—")[0].trim()}`),
+              h("span", { class: "palette-dot" }, "·"),
+              diffBadge(ex.difficulty),
+              timeBadge(ex.minutes),
+            ),
+          ),
+          h("span", { class: "palette-item-hint" }, "↵"),
+        );
+        results.append(li);
+      });
+    }
+
+    function goTo(ex) {
+      close();
+      location.hash = `#/example/${ex.chapterId}/${ex.slug}`;
+    }
+
+    function open() {
+      overlay.classList.add("open");
+      input.value = "";
+      selectedIndex = 0;
+      renderResults("");
+      setTimeout(() => input.focus(), 10);
+    }
+    function close() {
+      overlay.classList.remove("open");
+    }
+
+    // Events
+    input.addEventListener("input", () => { selectedIndex = 0; renderResults(input.value); });
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        selectedIndex = Math.min(currentMatches.length - 1, selectedIndex + 1);
+        renderResults(input.value);
+        const el = results.querySelector(".palette-item.active");
+        if (el) el.scrollIntoView({ block: "nearest" });
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        selectedIndex = Math.max(0, selectedIndex - 1);
+        renderResults(input.value);
+        const el = results.querySelector(".palette-item.active");
+        if (el) el.scrollIntoView({ block: "nearest" });
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        if (currentMatches[selectedIndex]) goTo(currentMatches[selectedIndex]);
+      } else if (e.key === "Escape") {
+        close();
+      }
+    });
+    overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+
+    window.addEventListener("keydown", (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        overlay.classList.contains("open") ? close() : open();
+      } else if (e.key === "/" && !overlay.classList.contains("open") && !["INPUT","TEXTAREA","SELECT"].includes(document.activeElement.tagName)) {
+        e.preventDefault();
+        open();
+      }
+    });
+
+    // Expose a trigger so the nav can include a "Search ⌘K" button.
+    window.__openPalette = open;
+  }
+  setupPalette();
 
   // ----- boot --------------------------------------------------
   render();

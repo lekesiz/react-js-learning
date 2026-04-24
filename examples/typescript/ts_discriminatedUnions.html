@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TypeScript — discriminated unions</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; max-width: 560px; background: #fff; }
+        button { padding: 8px 14px; border: 1px solid #0369a1; background: #0369a1; color: #fff; border-radius: 6px; cursor: pointer; font: inherit; font-weight: 600; margin-right: 6px; }
+        .pane { padding: 16px; border-radius: 8px; margin-top: 12px; }
+        .pane.idle    { background: #f1f5f9; color: #334155; }
+        .pane.loading { background: #eff6ff; color: #1d4ed8; }
+        .pane.success { background: #ecfdf5; color: #065f46; }
+        .pane.error   { background: #fef2f2; color: #991b1b; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="typescript,react">
+// A discriminated union makes illegal states unrepresentable. Instead of
+//   { isLoading, data, error }  // all three can coexist, any combination
+// use:
+//   { status: "idle" }                       — no data, no error
+//   { status: "loading" }                    — no data, no error
+//   { status: "success"; data: User[] }      — data, no error
+//   { status: "error"; error: string }       — no data, has error
+
+interface User { id: number; name: string; }
+
+type Posts =
+    | { status: "idle" }
+    | { status: "loading" }
+    | { status: "success"; data: User[] }
+    | { status: "error"; error: string };
+
+// Since each branch has a unique `status`, TS narrows the other fields
+// automatically inside each `case` / `if (s.status === ...)` block.
+function Panel({ state }: { state: Posts }) {
+    switch (state.status) {
+        case "idle":    return <div className="pane idle">Ready. Click a button.</div>;
+        case "loading": return <div className="pane loading">Loading users…</div>;
+        case "success":
+            // TS knows state.data exists here — autocompletes, no (state as any).
+            return (
+                <div className="pane success">
+                    Loaded {state.data.length} users:
+                    <ul>{state.data.map((u) => <li key={u.id}>{u.name}</li>)}</ul>
+                </div>
+            );
+        case "error":
+            return <div className="pane error">Failed: {state.error}</div>;
+    }
+}
+
+function App() {
+    // Declare the initial value with its union type so TS widens from the
+    // first "idle" branch to the whole union. (babel-standalone's TS
+    // preset can't parse `as Union | Union` casts inside a call.)
+    const initial: Posts = { status: "idle" };
+    const [state, setState] = React.useState(initial);
+
+    async function load() {
+        setState({ status: "loading" });
+        await new Promise((r) => setTimeout(r, 600));
+        setState({
+            status: "success",
+            data: [{ id: 1, name: "Ada" }, { id: 2, name: "Alan" }, { id: 3, name: "Grace" }],
+        });
+    }
+
+    function fail() {
+        setState({ status: "error", error: "Network unreachable" });
+    }
+
+    return (
+        <div className="card">
+            <h1>Discriminated unions — impossible states, literally impossible</h1>
+            <button onClick={load}>Load</button>
+            <button onClick={fail}>Force error</button>
+            <button onClick={() => setState({ status: "idle" })}
+                    style={{ background: "#fff", color: "#0369a1" }}>Reset</button>
+            <Panel state={state} />
+            <p className="muted">
+                You can't construct <code>{"{ status: \"success\" }"}</code> without a
+                <code>data</code> field — TS won't compile it. And in the success
+                branch, accessing <code>state.error</code> is a compile error.
+            </p>
+        </div>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Testing — your first component test</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; max-width: 600px; background: #fff; margin-bottom: 10px; }
+        .title { font-size: 13px; font-weight: 600; color: #334155; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
+        .result { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; padding: 6px 10px; border-radius: 6px; margin-top: 4px; }
+        .pass { background: #d1fae5; color: #065f46; }
+        .fail { background: #fee2e2; color: #991b1b; }
+        .summary { font-weight: 700; font-size: 14px; margin-top: 10px; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="component-root" class="card"></div>
+<div id="tests-root"></div>
+
+<script type="text/babel">
+// --- COMPONENT UNDER TEST -----------------------------------------------
+function Greeting({ name }) {
+    return <h2>Hello, {name || "stranger"}!</h2>;
+}
+
+// Render the component so you can see it run too.
+ReactDOM.render(
+    <div>
+        <div className="title">Component under test</div>
+        <Greeting name="Mikail" />
+        <p className="muted">Tests run automatically below.</p>
+    </div>,
+    document.getElementById("component-root")
+);
+
+// --- TINY TEST HARNESS --------------------------------------------------
+// Mimics the Vitest/Jest surface: describe, it, expect, render, screen.
+// In a real project you'd import these from vitest + @testing-library/react.
+const __results = [];
+
+function describe(name, fn) { __results.push({ type: "describe", name }); fn(); }
+
+function it(name, fn) {
+    try {
+        const r = fn();
+        if (r && typeof r.then === "function") {
+            return r.then(() => __results.push({ type: "pass", name }))
+                    .catch((e) => __results.push({ type: "fail", name, err: e.message }));
+        }
+        __results.push({ type: "pass", name });
+    } catch (e) {
+        __results.push({ type: "fail", name, err: e.message });
+    }
+}
+
+function expect(actual) {
+    return {
+        toBe(expected) {
+            if (actual !== expected) throw new Error(`expected ${JSON.stringify(actual)} toBe ${JSON.stringify(expected)}`);
+        },
+        toEqual(expected) {
+            if (JSON.stringify(actual) !== JSON.stringify(expected))
+                throw new Error(`expected ${JSON.stringify(actual)} toEqual ${JSON.stringify(expected)}`);
+        },
+        toContain(sub) {
+            const s = actual && actual.textContent != null ? actual.textContent : String(actual);
+            if (!s.includes(sub)) throw new Error(`expected "${s}" to contain "${sub}"`);
+        },
+    };
+}
+
+// Minimal render(): render JSX into a detached container, return { container }.
+function render(element) {
+    const container = document.createElement("div");
+    ReactDOM.render(element, container);
+    return { container, unmount: () => ReactDOM.unmountComponentAtNode(container) };
+}
+
+const screen = {
+    getByText(container, text) {
+        const el = [...container.querySelectorAll("*")].find(
+            (n) => n.childNodes.length === 1 && n.firstChild.nodeType === 3 && n.textContent.includes(text)
+        );
+        if (!el) throw new Error(`no element with text "${text}"`);
+        return el;
+    },
+};
+
+// --- THE TESTS -----------------------------------------------------------
+describe("<Greeting />", () => {
+    it("renders a friendly hello with the given name", () => {
+        const { container, unmount } = render(<Greeting name="Ada" />);
+        const heading = screen.getByText(container, "Hello, Ada!");
+        expect(heading).toContain("Hello");
+        expect(heading).toContain("Ada");
+        unmount();
+    });
+
+    it("falls back to 'stranger' when no name is provided", () => {
+        const { container, unmount } = render(<Greeting />);
+        expect(container).toContain("Hello, stranger!");
+        unmount();
+    });
+
+    it("fails on purpose so you see the red path", () => {
+        const { container, unmount } = render(<Greeting name="Turing" />);
+        // Deliberately wrong assertion to demonstrate a failing test:
+        expect(container).toContain("Goodbye, Turing!");
+        unmount();
+    });
+});
+
+// --- REPORT --------------------------------------------------------------
+setTimeout(() => {
+    const root = document.getElementById("tests-root");
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `<div class="title">Test results</div>`;
+    let pass = 0, fail = 0;
+    for (const r of __results) {
+        if (r.type === "describe") {
+            const h = document.createElement("div");
+            h.style.cssText = "font-weight:600;color:#0f172a;margin:10px 0 4px";
+            h.textContent = r.name;
+            card.appendChild(h);
+        } else {
+            const row = document.createElement("div");
+            row.className = "result " + (r.type === "pass" ? "pass" : "fail");
+            row.textContent = (r.type === "pass" ? "✔ " : "✖ ") + r.name + (r.err ? " — " + r.err : "");
+            card.appendChild(row);
+            if (r.type === "pass") pass++; else fail++;
+        }
+    }
+    const sum = document.createElement("div");
+    sum.className = "summary " + (fail === 0 ? "" : "fail");
+    sum.style.color = fail === 0 ? "#065f46" : "#991b1b";
+    sum.textContent = `${pass} passed, ${fail} failed`;
+    card.appendChild(sum);
+    root.appendChild(card);
+}, 50);
+</script>
+</body>
+</html>

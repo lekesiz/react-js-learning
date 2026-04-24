@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Testing — form input & validation</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; max-width: 600px; background: #fff; margin-bottom: 10px; }
+        .title { font-size: 13px; font-weight: 600; color: #334155; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
+        input { width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font: inherit; box-sizing: border-box; margin-top: 4px; }
+        button { padding: 8px 14px; border: 1px solid #0369a1; background: #0369a1; color: #fff; border-radius: 6px; cursor: pointer; font: inherit; font-weight: 600; margin-top: 10px; }
+        button:disabled { background: #94a3b8; border-color: #94a3b8; cursor: not-allowed; }
+        .err { color: #dc2626; font-size: 12px; margin-top: 4px; }
+        .result { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; padding: 6px 10px; border-radius: 6px; margin-top: 4px; }
+        .pass { background: #d1fae5; color: #065f46; }
+        .fail { background: #fee2e2; color: #991b1b; }
+        .summary { font-weight: 700; font-size: 14px; margin-top: 10px; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+<div id="component-root" class="card"></div>
+<div id="tests-root"></div>
+
+<script type="text/babel">
+// --- COMPONENT ----------------------------------------------------------
+function Signup({ onSubmit }) {
+    const [email, setEmail] = React.useState("");
+    const [submitted, setSubmitted] = React.useState(false);
+    const isValid = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
+
+    return (
+        <form onSubmit={(e) => { e.preventDefault(); if (isValid) { onSubmit?.(email); setSubmitted(true); } }}>
+            <label htmlFor="email">Email</label>
+            <input id="email" aria-label="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+            {!isValid && email.length > 0 && <div className="err">Enter a valid email.</div>}
+            <button type="submit" disabled={!isValid}>Sign up</button>
+            {submitted && <p data-testid="confirmation">Signed up as {email}</p>}
+        </form>
+    );
+}
+
+ReactDOM.render(
+    <div><div className="title">Component under test</div><Signup /></div>,
+    document.getElementById("component-root")
+);
+
+// --- HARNESS ------------------------------------------------------------
+const __results = [];
+function describe(n,f){__results.push({type:"describe",name:n});f();}
+function it(n,f){try{const r=f();if(r&&r.then)return r.then(()=>__results.push({type:"pass",name:n})).catch(e=>__results.push({type:"fail",name:n,err:e.message}));__results.push({type:"pass",name:n})}catch(e){__results.push({type:"fail",name:n,err:e.message})}}
+function expect(a){return{
+    toBe(b){if(a!==b)throw new Error(`expected ${JSON.stringify(a)} toBe ${JSON.stringify(b)}`)},
+    toEqual(b){if(JSON.stringify(a)!==JSON.stringify(b))throw new Error(`expected ${JSON.stringify(a)} toEqual ${JSON.stringify(b)}`)},
+    toContain(s){const t=a&&a.textContent!=null?a.textContent:String(a);if(!t.includes(s))throw new Error(`expected "${t}" to contain "${s}"`)},
+    toBeDisabled(){if(!a.disabled)throw new Error("expected element to be disabled")},
+    toBeEnabled(){if(a.disabled)throw new Error("expected element to be enabled")},
+}}
+function render(el){const c=document.createElement("div");ReactDOM.render(el,c);return{container:c,unmount:()=>ReactDOM.unmountComponentAtNode(c)}}
+const getByLabel = (c, text) => {
+    const lbl = [...c.querySelectorAll("label")].find((l) => l.textContent.trim() === text);
+    if (!lbl) throw new Error(`no label "${text}"`);
+    return c.querySelector(`#${lbl.getAttribute("for")}`);
+};
+const getByRole = (c, role, opts = {}) => {
+    let sel = role === "button" ? "button" : `[role="${role}"]`;
+    const all = [...c.querySelectorAll(sel)];
+    if (opts.name) return all.find((n) => n.textContent.trim() === opts.name) || (() => { throw new Error(`no ${role} "${opts.name}"`); })();
+    return all[0];
+};
+const getByTestId = (c, id) => c.querySelector(`[data-testid="${id}"]`);
+
+const fireEvent = {
+    change(el, value) {
+        const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+        setter.call(el, value);
+        el.dispatchEvent(new Event("input", { bubbles: true }));
+        el.dispatchEvent(new Event("change", { bubbles: true }));
+    },
+    click(el) { el.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); },
+    submit(form) { form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })); },
+};
+
+// --- TESTS --------------------------------------------------------------
+describe("<Signup />", () => {
+    it("disables submit until email is valid", () => {
+        const { container, unmount } = render(<Signup />);
+        expect(getByRole(container, "button", { name: "Sign up" })).toBeDisabled();
+        fireEvent.change(getByLabel(container, "Email"), "not-an-email");
+        expect(getByRole(container, "button", { name: "Sign up" })).toBeDisabled();
+        fireEvent.change(getByLabel(container, "Email"), "ada@babbage.net");
+        expect(getByRole(container, "button", { name: "Sign up" })).toBeEnabled();
+        unmount();
+    });
+
+    it("calls onSubmit with the typed email", () => {
+        const received = [];
+        const { container, unmount } = render(<Signup onSubmit={(v) => received.push(v)} />);
+        fireEvent.change(getByLabel(container, "Email"), "alan@bletchley.uk");
+        fireEvent.submit(container.querySelector("form"));
+        expect(received).toEqual(["alan@bletchley.uk"]);
+        expect(getByTestId(container, "confirmation")).toContain("Signed up as alan@bletchley.uk");
+        unmount();
+    });
+});
+
+// --- REPORT -------------------------------------------------------------
+setTimeout(() => {
+    const root = document.getElementById("tests-root");
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `<div class="title">Test results</div>`;
+    let pass = 0, fail = 0;
+    for (const r of __results) {
+        if (r.type === "describe") {
+            const h = document.createElement("div");
+            h.style.cssText = "font-weight:600;color:#0f172a;margin:10px 0 4px";
+            h.textContent = r.name;
+            card.appendChild(h);
+        } else {
+            const row = document.createElement("div");
+            row.className = "result " + (r.type === "pass" ? "pass" : "fail");
+            row.textContent = (r.type === "pass" ? "✔ " : "✖ ") + r.name + (r.err ? " — " + r.err : "");
+            card.appendChild(row);
+            r.type === "pass" ? pass++ : fail++;
+        }
+    }
+    const sum = document.createElement("div");
+    sum.className = "summary";
+    sum.style.color = fail === 0 ? "#065f46" : "#991b1b";
+    sum.textContent = `${pass} passed, ${fail} failed`;
+    card.appendChild(sum);
+    root.appendChild(card);
+}, 50);
+</script>
+</body>
+</html>

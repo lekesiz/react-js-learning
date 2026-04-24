@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>useCallback — stable function references</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; max-width: 560px; background: #fff; margin-bottom: 10px; }
+        button { padding: 8px 14px; border: 1px solid #0369a1; background: #0369a1; color: #fff; border-radius: 6px; cursor: pointer; font: inherit; font-weight: 600; margin-right: 6px; }
+        .tick { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 13px; padding: 6px 10px; border-radius: 6px; display: inline-block; margin-top: 6px; }
+        .tick.bad { background: #fef3c7; color: #92400e; }
+        .tick.good { background: #d1fae5; color: #065f46; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// React.memo only works if PROPS are shallowly equal between renders.
+// Inline arrow functions `() => ...` break that — every render creates
+// a new function. useCallback returns the SAME reference until deps change.
+
+const { useState, memo, useCallback, useRef } = React;
+
+function useRenders() { const r = useRef(0); r.current += 1; return r.current; }
+
+const MemoButton = memo(function MemoButton({ onClick, label }) {
+    const r = useRenders();
+    return (
+        <button onClick={onClick}>
+            {label} <span style={{ fontFamily: "monospace", fontSize: 12, marginLeft: 6, opacity: 0.7 }}>(renders: {r})</span>
+        </button>
+    );
+});
+
+function App() {
+    const [count, setCount] = useState(0);
+    const [tick, setTick] = useState(0); // causes the parent to re-render
+
+    // BAD: inline arrow → new ref every render → defeats memo
+    const resetInline = () => setCount(0);
+
+    // GOOD: stable reference across renders
+    const resetStable = useCallback(() => setCount(0), []);
+
+    return (
+        <div>
+            <h1>useCallback — stable function refs for memoised children</h1>
+
+            <div className="card">
+                <p>count = <strong>{count}</strong>, parent tick = <strong>{tick}</strong></p>
+                <button onClick={() => setCount((c) => c + 1)}>+1</button>
+                <button onClick={() => setTick((t) => t + 1)}>Tick parent</button>
+            </div>
+
+            <div className="card">
+                <div className="tick bad">Inline prop (new ref every render)</div>
+                <div style={{ marginTop: 6 }}>
+                    <MemoButton onClick={resetInline} label="Reset (inline)" />
+                </div>
+            </div>
+
+            <div className="card">
+                <div className="tick good">useCallback prop (stable ref)</div>
+                <div style={{ marginTop: 6 }}>
+                    <MemoButton onClick={resetStable} label="Reset (stable)" />
+                </div>
+            </div>
+
+            <p className="muted">
+                Tick the parent a few times. The inline version's render count grows
+                because its <code>onClick</code> is a new function each render;
+                <code>memo</code> bails out for the stable one.
+            </p>
+        </div>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

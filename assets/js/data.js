@@ -10,6 +10,7 @@ window.CHAPTERS = [
     description:
       "Before touching React, master the modern JavaScript it relies on: block scoping, arrow functions, classes, template literals, destructuring, and modules. Each example is a tiny, runnable page that isolates one idea.",
     icon: "js",
+    defaults: { difficulty: "beginner", minutes: 4 },
     examples: [
       {
         slug: "let-vs-var-scope",
@@ -126,6 +127,7 @@ window.CHAPTERS = [
     description:
       "Start with the most explicit form of React. Every component here is written with `React.createElement(...)` — the call JSX ultimately produces. You'll see functional components, class components, props, and children laid bare.",
     icon: "atom",
+    defaults: { difficulty: "beginner", minutes: 5 },
     examples: [
       {
         slug: "react-17-cdn",
@@ -290,6 +292,7 @@ window.CHAPTERS = [
     description:
       "Now that you understand createElement, switch to JSX. These examples use Babel Standalone to transform JSX in the browser, so you can keep iterating without a build step while learning.",
     icon: "code",
+    defaults: { difficulty: "beginner", minutes: 5 },
     examples: [
       {
         slug: "jsx-vs-createelement",
@@ -486,6 +489,7 @@ window.CHAPTERS = [
     description:
       "State is what makes a UI interactive. This chapter walks through the same small exercise twice — once with class components and `this.state`, once with functional components and `useState` — so the mapping between the two worlds is obvious.",
     icon: "sparkles",
+    defaults: { difficulty: "intermediate", minutes: 6 },
     examples: [
       {
         slug: "step1-class",
@@ -618,6 +622,7 @@ window.CHAPTERS = [
     description:
       "Past state, real apps need to react to the outside world: timers, subscriptions, APIs, and shared values like the current user or theme. This chapter covers the four pillars most React apps rely on — useEffect for side effects, useContext for tree-wide state, custom hooks to package reusable logic, and fetch patterns with loading / error / debounce.",
     icon: "zap",
+    defaults: { difficulty: "intermediate", minutes: 8 },
     examples: [
       {
         slug: "useeffect-on-mount",
@@ -718,6 +723,7 @@ window.CHAPTERS = [
     description:
       "Most real apps do two things: they have more than one page, and they ask the user for input. This chapter covers both — from a 15-line hand-rolled hash router through React Router's Link/Route/useParams/nested layouts, then on to controlled forms: shared handlers, submit + preventDefault, required / regex / real-time validation, and a full multi-step wizard.",
     icon: "route",
+    defaults: { difficulty: "intermediate", minutes: 10 },
     examples: [
       {
         slug: "diy-hash-router",
@@ -810,6 +816,7 @@ window.CHAPTERS = [
     description:
       "Once an app has more than a handful of pieces of state, coupled useState hooks turn into a spider web. This chapter covers the three moves that keep state manageable at scale — useReducer (actions instead of setters), Context + Reducer (a lightweight global store), and normalization (byId / allIds + selectors) — and ends with a small CRUD app that wires them all together.",
     icon: "database",
+    defaults: { difficulty: "advanced", minutes: 12 },
     examples: [
       {
         slug: "usereducer-counter",
@@ -882,18 +889,249 @@ window.CHAPTERS = [
         description:
           "The whole chapter in one screen: Context + Reducer + normalized store + search / filter selectors, with add / update / delete wired end-to-end.",
         concepts: ["CRUD", "Context", "useReducer", "normalization"],
+        minutes: 15,
+      },
+    ],
+  },
+
+  {
+    id: "performance",
+    number: 8,
+    title: "Performance — memo, useMemo, useCallback, lazy, Suspense",
+    tagline: "Skip work React doesn't need to redo.",
+    description:
+      "Most React apps are fast enough. When they're not, the fix is almost always one of: stop re-rendering when nothing changed, cache an expensive computation, split a big bundle into lazy chunks, or virtualise a long list. This chapter walks through each of those plus the React 18 concurrency primitives (useDeferredValue, useTransition) and how to measure with the Profiler.",
+    icon: "gauge",
+    defaults: { difficulty: "advanced", minutes: 12 },
+    examples: [
+      {
+        slug: "memo-prevent-rerenders",
+        file: "memo_preventRerenders.html",
+        title: "React.memo — prevent unnecessary re-renders",
+        description:
+          "Wrap a component so it skips re-renders when its props haven't changed — watch the render counter freeze.",
+        concepts: ["memo", "shallow equality", "render count"],
+      },
+      {
+        slug: "useMemo-expensive",
+        file: "useMemo_expensive.html",
+        title: "useMemo — cache expensive computations",
+        description:
+          "Skip a 5-million-op loop on unrelated re-renders. Live comparison of a memoised vs un-memoised version.",
+        concepts: ["useMemo", "memoisation", "derived state"],
+      },
+      {
+        slug: "useCallback-stable-ref",
+        file: "useCallback_stableRef.html",
+        title: "useCallback — stable function refs for memoised children",
+        description:
+          "Why an inline arrow prop defeats `React.memo`, and how `useCallback` fixes it.",
+        concepts: ["useCallback", "React.memo", "referential identity"],
+      },
+      {
+        slug: "lazy-suspense-code-split",
+        file: "lazy_suspense_codeSplit.html",
+        title: "React.lazy + Suspense — load on demand",
+        description:
+          "Defer a heavy component's module until the user actually needs it — real code splitting with a simulated network delay.",
+        concepts: ["React.lazy", "Suspense", "code splitting"],
+      },
+      {
+        slug: "virtualization-basic",
+        file: "virtualization_basic.html",
+        title: "Virtualization — render a sliver of 10 000 rows",
+        description:
+          "Manual windowing: render just the rows inside the viewport plus a small overscan. The idea behind `react-window` / `react-virtual`.",
+        concepts: ["virtualization", "windowing", "scroll"],
+        minutes: 15,
+      },
+      {
+        slug: "useDeferredValue",
+        file: "useDeferredValue.html",
+        title: "useDeferredValue — keep the input responsive (React 18)",
+        description:
+          "Mark a value as low-priority so React can re-render heavy consumers in the background while typing stays snappy.",
+        concepts: ["useDeferredValue", "React 18", "concurrent"],
+      },
+      {
+        slug: "useTransition",
+        file: "useTransition.html",
+        title: "useTransition — urgent vs non-urgent state updates",
+        description:
+          "Wrap a slow state update in `startTransition` so the click feedback is instant; `isPending` gives you a spinner surface.",
+        concepts: ["useTransition", "startTransition", "React 18"],
+      },
+      {
+        slug: "profiler-component",
+        file: "profiler_component.html",
+        title: "React.Profiler — measure a commit programmatically",
+        description:
+          "Wrap a subtree and collect per-commit timings yourself — useful for CI smoke tests or local investigations.",
+        concepts: ["Profiler", "actualDuration", "measurement"],
+      },
+    ],
+  },
+
+  {
+    id: "testing",
+    number: 9,
+    title: "Testing — Vitest / Jest + Testing Library patterns",
+    tagline: "Run tests in the browser. Learn the patterns you'll use for real.",
+    description:
+      "Every example in this chapter ships with a tiny in-browser test harness that mirrors the Vitest / Jest API (describe, it, expect) and exposes render / fireEvent / waitFor helpers like @testing-library/react. You'll see tests actually run and report pass/fail — the patterns translate 1:1 to a real project.",
+    icon: "flask",
+    defaults: { difficulty: "intermediate", minutes: 9 },
+    examples: [
+      {
+        slug: "test-first-test",
+        file: "test_firstTest.html",
+        title: "Your first component test — render, query, expect",
+        description:
+          "Introduce describe / it / expect, render a component, assert on the DOM. One test is deliberately red so you see the fail path.",
+        concepts: ["describe", "it", "expect", "render"],
+      },
+      {
+        slug: "test-user-interactions",
+        file: "test_userInteractions.html",
+        title: "User interactions — fireEvent, queries, buttons",
+        description:
+          "Click a button, press a key, check the output. The core RTL pattern in eight tests that all pass.",
+        concepts: ["fireEvent", "click", "data-testid"],
+      },
+      {
+        slug: "test-form-input",
+        file: "test_formInput.html",
+        title: "Forms — labels, validation, submit",
+        description:
+          "Type into inputs, assert disabled/enabled, capture the submit payload with a spy.",
+        concepts: ["getByLabelText", "form submit", "validation"],
+      },
+      {
+        slug: "test-async-waitFor",
+        file: "test_asyncWaitFor.html",
+        title: "Async components — loading states and waitFor",
+        description:
+          "Drive a component that loads asynchronously, use `waitFor` to assert once the result appears.",
+        concepts: ["waitFor", "async", "loading state"],
+        minutes: 10,
+      },
+      {
+        slug: "test-mocking-fetch",
+        file: "test_mockingFetch.html",
+        title: "Mocking fetch — success + error branches",
+        description:
+          "Swap `window.fetch` for a stub that returns a known response. Verify the component handles both 200 and 500.",
+        concepts: ["fetch mock", "error path", "stub"],
+        minutes: 10,
+      },
+      {
+        slug: "test-custom-hook",
+        file: "test_customHook.html",
+        title: "Testing a custom hook — renderHook + act",
+        description:
+          "Test `useBoundedCounter` without a host component. A mini `renderHook` + `act` demo you can read in one screen.",
+        concepts: ["renderHook", "act", "custom hook"],
+      },
+      {
+        slug: "test-best-practices",
+        file: "test_bestPractices.html",
+        title: "Cheat sheet — what to test (and what to skip)",
+        description:
+          "A one-page recap: query priority, arrange-act-assert, mocking at the network boundary, speed budgets.",
+        concepts: ["best practices", "query priority", "AAA"],
+        difficulty: "intermediate",
+        minutes: 6,
+      },
+    ],
+  },
+
+  {
+    id: "typescript",
+    number: 10,
+    title: "TypeScript for React — typed props, hooks, unions",
+    tagline: "Catch whole classes of bugs before the app ever runs.",
+    description:
+      "TypeScript turns React into a much calmer language. Props become contracts, reducers become state machines you can't misuse, and Context stops crashing with 'cannot read of null'. These examples are all .tsx — Babel Standalone strips the types at runtime, but in a real project `tsc` keeps you honest.",
+    icon: "typescript",
+    defaults: { difficulty: "intermediate", minutes: 9 },
+    examples: [
+      {
+        slug: "ts-typed-props",
+        file: "ts_typedProps.html",
+        title: "Typed props — interfaces, optional fields, children",
+        description:
+          "A Button component with a union-typed `variant`, optional defaults, and `React.ReactNode` children.",
+        concepts: ["interface", "React.ReactNode", "optional props"],
+      },
+      {
+        slug: "ts-usestate-typed",
+        file: "ts_useState_typed.html",
+        title: "Typed useState — inferred, explicit, and union",
+        description:
+          "Three flavours: plain inference, `useState<User | null>`, and `useState<Status>` with a narrow union.",
+        concepts: ["useState", "generics", "union types"],
+      },
+      {
+        slug: "ts-event-handlers",
+        file: "ts_eventHandlers.html",
+        title: "Typed event handlers — change, submit, mouse, keyboard",
+        description:
+          "The four event types you hit every week, with live handlers logging to a shared panel.",
+        concepts: ["React.ChangeEvent", "FormEvent", "MouseEvent"],
+      },
+      {
+        slug: "ts-discriminated-unions",
+        file: "ts_discriminatedUnions.html",
+        title: "Discriminated unions — impossible states, impossible",
+        description:
+          "Encode idle / loading / success / error so only valid combinations compile. No more `data && !loading && ...`.",
+        concepts: ["discriminated union", "narrowing", "type safety"],
+        minutes: 10,
+      },
+      {
+        slug: "ts-usereducer-typed",
+        file: "ts_useReducer_typed.html",
+        title: "Typed useReducer — exhaustive actions via `never`",
+        description:
+          "A reducer whose switch becomes a compile-time checklist: add a new action type and the `never` branch forces you to handle it.",
+        concepts: ["useReducer", "never", "exhaustiveness"],
+        difficulty: "advanced",
+        minutes: 11,
+      },
+      {
+        slug: "ts-generic-components",
+        file: "ts_genericComponents.html",
+        title: "Generic components — one <List<T>>, any item shape",
+        description:
+          "The `<T,>` trick for TSX, inference at the call site, and explicit type parameters when you need them.",
+        concepts: ["generics", "renderItem", "inference"],
+        difficulty: "advanced",
+        minutes: 10,
+      },
+      {
+        slug: "ts-context-typed",
+        file: "ts_context_typed.html",
+        title: "Typed Context with a safe `useAuth` hook",
+        description:
+          "The canonical pattern: `createContext<T | null>(null)` + a custom hook that narrows away the null with a clear error.",
+        concepts: ["Context", "custom hook", "null safety"],
       },
     ],
   },
 ];
 
-// Flat list for search / next-prev navigation
-window.ALL_EXAMPLES = window.CHAPTERS.flatMap((c) =>
-  c.examples.map((e) => ({
+// Flat list for search / next-prev navigation.
+// Each example inherits its chapter's { difficulty, minutes } defaults, but
+// can override them per-example (see e.g. chapter 8's virtualization entry).
+window.ALL_EXAMPLES = window.CHAPTERS.flatMap((c) => {
+  const defaults = c.defaults || {};
+  return c.examples.map((e) => ({
+    difficulty: defaults.difficulty || "intermediate",
+    minutes:    defaults.minutes    || 7,
     ...e,
     chapterId: c.id,
     chapterTitle: c.title,
     chapterNumber: c.number,
     path: `examples/${c.id}/${e.file}`,
-  }))
-);
+  }));
+});

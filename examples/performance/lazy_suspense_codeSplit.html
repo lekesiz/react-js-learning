@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>React.lazy + Suspense — code splitting</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; max-width: 560px; background: #fff; }
+        button { padding: 8px 14px; border: 1px solid #0369a1; background: #0369a1; color: #fff; border-radius: 6px; cursor: pointer; font: inherit; font-weight: 600; }
+        .fallback { padding: 20px; border-radius: 8px; background: #eff6ff; color: #1d4ed8; text-align: center; margin-top: 12px; }
+        .loaded { padding: 20px; border-radius: 8px; background: #ecfdf5; color: #065f46; margin-top: 12px; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// React.lazy turns a dynamic import() into a component that loads on demand.
+// <Suspense fallback={...}> shows a placeholder until the chunk resolves.
+// In a real app, bundlers split the lazy module into a separate .js chunk.
+// Here, we simulate a network delay to show the fallback in action.
+
+const { useState, lazy, Suspense } = React;
+
+// Simulate `import("./HeavyChart")` — wait 1.2s, then resolve with a component.
+const HeavyChart = lazy(() =>
+    new Promise((resolve) =>
+        setTimeout(
+            () => resolve({
+                default: function HeavyChart({ value }) {
+                    const bars = Array.from({ length: 10 }, (_, i) => ({
+                        label: "col " + (i + 1),
+                        height: 10 + ((i * 17 + value * 3) % 80),
+                    }));
+                    return (
+                        <div className="loaded">
+                            <strong>HeavyChart loaded!</strong>
+                            <p style={{ margin: "8px 0", fontSize: 13 }}>value = {value}</p>
+                            <div style={{ display: "flex", gap: 4, alignItems: "flex-end", height: 100 }}>
+                                {bars.map((b, i) => (
+                                    <div key={i} title={b.label} style={{
+                                        width: 22, height: b.height,
+                                        background: "#059669", borderRadius: 3,
+                                    }} />
+                                ))}
+                            </div>
+                        </div>
+                    );
+                },
+            }),
+            1200
+        )
+    )
+);
+
+function App() {
+    const [show, setShow] = useState(false);
+    const [value, setValue] = useState(5);
+
+    return (
+        <div className="card">
+            <h1>React.lazy + Suspense — load on demand</h1>
+            <button onClick={() => setShow((s) => !s)}>
+                {show ? "Hide chart" : "Load chart"}
+            </button>
+            {show && (
+                <button style={{ marginLeft: 6, background: "#fff", color: "#0369a1" }}
+                        onClick={() => setValue((v) => v + 1)}>
+                    Bump value ({value})
+                </button>
+            )}
+
+            {show && (
+                <Suspense fallback={<div className="fallback">Loading chart module… ⏳</div>}>
+                    <HeavyChart value={value} />
+                </Suspense>
+            )}
+
+            <p className="muted">
+                Before you click, the chart module doesn't exist in memory. Click
+                "Load chart" and see the fallback for ~1.2 s (simulated network).
+                After the first load it's cached — toggling is instant.
+            </p>
+        </div>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

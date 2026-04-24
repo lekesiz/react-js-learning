@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TypeScript — typed props</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; max-width: 560px; background: #fff; }
+        .btn { padding: 6px 12px; border-radius: 6px; cursor: pointer; font: inherit; margin: 3px 3px 0 0; border: 1px solid transparent; }
+        .btn-primary { background: #0369a1; color: #fff; }
+        .btn-secondary { background: #fff; color: #0369a1; border-color: #0369a1; }
+        .btn-danger { background: #dc2626; color: #fff; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<!-- babel-standalone strips TypeScript types at runtime.
+     In a real project you'd run `tsc --noEmit` for actual type-checking. -->
+<script type="text/babel" data-presets="typescript,react">
+// --- Props as an explicit interface ---------------------------------------
+type Variant = "primary" | "secondary" | "danger";
+
+interface ButtonProps {
+    label: string;
+    variant?: Variant;       // optional — default "primary"
+    disabled?: boolean;
+    onClick: () => void;     // arrow type = no args, no return value
+    children?: React.ReactNode;
+}
+
+function Button({ label, variant = "primary", disabled, onClick, children }: ButtonProps) {
+    return (
+        <button className={"btn btn-" + variant} disabled={disabled} onClick={onClick}>
+            {label}{children ? <> — {children}</> : null}
+        </button>
+    );
+}
+
+// --- A card that takes children and a title -------------------------------
+interface CardProps {
+    title: string;
+    children: React.ReactNode;
+}
+
+const Card: React.FC<CardProps> = ({ title, children }) => (
+    <div className="card">
+        <h1>{title}</h1>
+        {children}
+    </div>
+);
+
+// --- Usage ----------------------------------------------------------------
+function App() {
+    return (
+        <Card title="Typed props — interfaces + defaults + children">
+            <Button label="Save" onClick={() => alert("saved!")} />
+            <Button label="Cancel" variant="secondary" onClick={() => alert("cancelled")} />
+            <Button label="Delete" variant="danger" onClick={() => alert("deleted")}>
+                permanent
+            </Button>
+            <Button label="Disabled" onClick={() => {}} disabled />
+            <p className="muted">
+                In <code>.tsx</code> a missing prop becomes a <em>compile error</em>,
+                not a runtime surprise. Try removing <code>onClick</code> in your
+                editor — the red squiggle tells you before you hit "save".
+            </p>
+        </Card>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

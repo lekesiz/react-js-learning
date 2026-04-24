@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>useDeferredValue — keep the input responsive</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; max-width: 600px; background: #fff; }
+        input { width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font: inherit; box-sizing: border-box; }
+        .stale { opacity: 0.55; transition: opacity 120ms ease; }
+        .stat { display: flex; gap: 14px; font-size: 13px; color: #64748b; margin-top: 6px; }
+        .stat strong { color: #0369a1; font-family: 'JetBrains Mono', ui-monospace, monospace; }
+        .row { padding: 4px 0; font-size: 13px; border-bottom: 1px solid #f1f5f9; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// React 18: useDeferredValue lets you mark a value as "low priority".
+// Typing stays snappy because the expensive render reads the deferred
+// (older) value while a newer value is being worked on in the background.
+
+const { useState, useDeferredValue, useMemo } = React;
+
+// Fake a big list of items so filtering is actually expensive at scale.
+const ITEMS = Array.from({ length: 12000 }, (_, i) => "Item label " + i + " · tag-" + (i % 50));
+
+function ExpensiveList({ query }) {
+    const results = useMemo(() => {
+        // Burn some CPU so the effect is visible
+        const low = query.toLowerCase();
+        const out = [];
+        for (const it of ITEMS) {
+            if (query === "" || it.toLowerCase().includes(low)) {
+                if (out.length < 80) out.push(it);
+            }
+        }
+        return out;
+    }, [query]);
+
+    return (
+        <div>
+            <div className="stat"><span>Matches (capped at 80): <strong>{results.length}</strong></span></div>
+            <div style={{ maxHeight: 220, overflowY: "auto", marginTop: 6 }}>
+                {results.map((r, i) => <div key={i} className="row">{r}</div>)}
+            </div>
+        </div>
+    );
+}
+
+function App() {
+    const [query, setQuery] = useState("");
+    const deferred = useDeferredValue(query);
+    const isStale = query !== deferred;
+
+    return (
+        <div className="card">
+            <h1>useDeferredValue — decouple input from heavy render</h1>
+            <input value={query} onChange={(e) => setQuery(e.target.value)}
+                   placeholder="Type fast… the input stays responsive" />
+            <div className="stat">
+                <span>Live value: <strong>{query || "(empty)"}</strong></span>
+                <span>Deferred: <strong>{deferred || "(empty)"}</strong></span>
+                {isStale && <span style={{ color: "#b45309" }}>· showing older results…</span>}
+            </div>
+            <div className={isStale ? "stale" : ""}>
+                <ExpensiveList query={deferred} />
+            </div>
+            <p className="muted">
+                The expensive list reads the <em>deferred</em> query — while you type
+                fast, React keeps the UI snappy and catches up in the background.
+                The dim overlay is just a visual hint that results are stale.
+            </p>
+        </div>
+    );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

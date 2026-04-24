@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>useMemo — cache expensive computations</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; max-width: 560px; background: #fff; }
+        label { display: block; font-size: 13px; color: #475569; margin-top: 10px; }
+        input { width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font: inherit; margin-top: 4px; box-sizing: border-box; }
+        button { padding: 6px 12px; border: 1px solid #cbd5e1; background: #f1f5f9; border-radius: 6px; cursor: pointer; font: inherit; margin-top: 8px; }
+        .stat { display: flex; justify-content: space-between; padding: 8px 10px; border-radius: 6px; background: #f8fafc; margin-top: 6px; font-size: 14px; }
+        .stat strong { color: #0369a1; font-family: 'JetBrains Mono', ui-monospace, monospace; }
+        .slow { background: #fee2e2; color: #991b1b; }
+        .fast { background: #d1fae5; color: #065f46; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// useMemo caches the RESULT of a computation while its inputs don't change.
+// Only reach for it when the work is measurable — memoisation itself isn't free.
+// Here we inflate a factorial into a slow loop to make the effect visible.
+
+const { useState, useMemo } = React;
+
+// Deliberately slow: an artificially heavy "fibonacci-ish" sum.
+function expensiveSum(n) {
+    let x = 0;
+    for (let i = 0; i < 5_000_000; i++) x += Math.sin(i + n);
+    return Math.round(x * 1000) / 1000;
+}
+
+function App() {
+    const [n, setN] = useState(1);
+    const [tick, setTick] = useState(0);
+
+    // 1. WITHOUT useMemo — runs on every render, even when `n` didn't change.
+    const t1 = performance.now();
+    const unmemoised = expensiveSum(n);
+    const unmemoisedMs = (performance.now() - t1).toFixed(1);
+
+    // 2. WITH useMemo — runs only when `n` changes.
+    const memoised = useMemo(() => expensiveSum(n), [n]);
+
+    return (
+        <div className="card">
+            <h1>useMemo — cache the expensive step</h1>
+
+            <label>n
+                <input type="number" value={n} min={1} max={50}
+                       onChange={(e) => setN(Number(e.target.value) || 1)} />
+            </label>
+            <button onClick={() => setTick((t) => t + 1)}>Force unrelated re-render (tick: {tick})</button>
+
+            <div className="stat slow">
+                <span>Without useMemo</span>
+                <strong>{unmemoised} · {unmemoisedMs} ms this render</strong>
+            </div>
+            <div className="stat fast">
+                <span>With useMemo</span>
+                <strong>{memoised}</strong>
+            </div>
+
+            <p className="muted">
+                Click the <em>Force re-render</em> button a few times. The "without"
+                row keeps spending 5M ops per render; the memoised row stays the
+                same because <code>n</code> didn't change. Change <code>n</code> and
+                both compute again.
+            </p>
+        </div>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

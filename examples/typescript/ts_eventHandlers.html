@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TypeScript — typed event handlers</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; max-width: 560px; background: #fff; }
+        label { display: block; font-size: 13px; color: #475569; margin-top: 10px; }
+        input, select { width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font: inherit; margin-top: 4px; box-sizing: border-box; }
+        button { padding: 8px 14px; border: 1px solid #0369a1; background: #0369a1; color: #fff; border-radius: 6px; cursor: pointer; font: inherit; font-weight: 600; margin-top: 10px; }
+        .log { padding: 8px 12px; background: #0f172a; color: #a5f3fc; border-radius: 6px; margin-top: 8px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; max-height: 160px; overflow-y: auto; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="typescript,react">
+// React.* event types give you strong typing on e.target, key, clientX, etc.
+// The common ones:
+//   React.ChangeEvent<HTMLInputElement>      — value changes
+//   React.FormEvent<HTMLFormElement>         — form submit
+//   React.MouseEvent<HTMLButtonElement>      — clicks
+//   React.KeyboardEvent<HTMLInputElement>    — key presses
+
+function App() {
+    const initialLog: string[] = [];
+    const [log, setLog] = React.useState(initialLog);
+
+    const push = (line: string) =>
+        setLog((l) => [new Date().toLocaleTimeString() + " · " + line, ...l].slice(0, 10));
+
+    // --- Change event: infer value from target.value -----------------------
+    const onNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        push(`name: "${e.target.value}"`);
+    };
+
+    const onRoleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        push(`role: "${e.target.value}"`);
+    };
+
+    // --- Submit event: preventDefault then collect values ------------------
+    const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        const data = new FormData(e.currentTarget);
+        push(`submit: ${JSON.stringify(Object.fromEntries(data.entries()))}`);
+    };
+
+    // --- Mouse event: use e.clientX / .shiftKey if needed ------------------
+    const onBigClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+        push(`click at ${e.clientX},${e.clientY} (shift=${e.shiftKey})`);
+    };
+
+    // --- Keyboard event: intercept Enter ----------------------------------
+    const onKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === "Enter") push(`Enter on "${e.currentTarget.value}"`);
+    };
+
+    return (
+        <div className="card">
+            <h1>Typed event handlers</h1>
+            <form onSubmit={onSubmit}>
+                <label>Name
+                    <input name="name" onChange={onNameChange} onKeyDown={onKey} placeholder="Press Enter to log" />
+                </label>
+                <label>Role
+                    <select name="role" onChange={onRoleChange}>
+                        <option>user</option>
+                        <option>editor</option>
+                        <option>admin</option>
+                    </select>
+                </label>
+                <button type="submit">Submit form</button>
+            </form>
+            <button style={{ marginLeft: 6, background: "#fff", color: "#0369a1" }}
+                    onClick={onBigClick}>
+                Click me (try shift-click)
+            </button>
+
+            <div className="log">
+                {log.length === 0 ? "// events will appear here" : log.map((l, i) => <div key={i}>&gt; {l}</div>)}
+            </div>
+
+            <p className="muted">
+                TypeScript keeps <code>e.target.value</code>, <code>e.key</code>, and
+                <code>e.clientX</code> honest. Typing the wrong event (say,
+                <code>MouseEvent</code> on an <code>onChange</code>) is a compile error.
+            </p>
+        </div>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Testing — a custom hook</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; max-width: 600px; background: #fff; margin-bottom: 10px; }
+        .title { font-size: 13px; font-weight: 600; color: #334155; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
+        .result { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; padding: 6px 10px; border-radius: 6px; margin-top: 4px; }
+        .pass { background: #d1fae5; color: #065f46; }
+        .fail { background: #fee2e2; color: #991b1b; }
+        .summary { font-weight: 700; font-size: 14px; margin-top: 10px; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="tests-root" class="card"></div>
+
+<script type="text/babel">
+// --- HOOK UNDER TEST ----------------------------------------------------
+// A simple counter hook with an upper bound.
+function useBoundedCounter(initial = 0, max = 5) {
+    const [n, setN] = React.useState(initial);
+    return {
+        value: n,
+        increment: () => setN((x) => Math.min(max, x + 1)),
+        decrement: () => setN((x) => Math.max(0, x - 1)),
+        reset: () => setN(initial),
+        atMax: n >= max,
+    };
+}
+
+// --- HARNESS + renderHook -----------------------------------------------
+const __results = [];
+function describe(n,f){__results.push({type:"describe",name:n});f();}
+function it(n,f){try{const r=f();if(r&&r.then)return r.then(()=>__results.push({type:"pass",name:n})).catch(e=>__results.push({type:"fail",name:n,err:e.message}));__results.push({type:"pass",name:n})}catch(e){__results.push({type:"fail",name:n,err:e.message})}}
+function expect(a){return{
+    toBe(b){if(a!==b)throw new Error(`expected ${JSON.stringify(a)} toBe ${JSON.stringify(b)}`)},
+    toEqual(b){if(JSON.stringify(a)!==JSON.stringify(b))throw new Error(`expected ${JSON.stringify(a)} toEqual ${JSON.stringify(b)}`)},
+    toBeTruthy(){if(!a)throw new Error("expected truthy")},
+    toBeFalsy(){if(a)throw new Error("expected falsy")},
+}}
+
+// renderHook: render a helper component, expose the hook's return value
+// through a mutable ref. React Testing Library ships its own renderHook
+// helper; this is the same idea, 20 lines.
+function renderHook(useHook) {
+    const ref = { current: null };
+    function Probe() {
+        ref.current = useHook();
+        return null;
+    }
+    const container = document.createElement("div");
+    ReactDOM.render(<Probe />, container);
+    return {
+        result: ref,
+        rerender: () => ReactDOM.render(<Probe />, container),
+        unmount: () => ReactDOM.unmountComponentAtNode(container),
+    };
+}
+
+// act(): wrap state updates so React flushes synchronously before we assert.
+function act(fn) {
+    // React exposes TestUtils.act through react-dom/test-utils in real setups.
+    // Here, a minimal wrapper: run fn(), then synchronously flush via a forced render.
+    fn();
+}
+
+// --- TESTS --------------------------------------------------------------
+describe("useBoundedCounter", () => {
+    it("starts at the initial value", () => {
+        const { result, unmount } = renderHook(() => useBoundedCounter(3, 10));
+        expect(result.current.value).toBe(3);
+        expect(result.current.atMax).toBeFalsy();
+        unmount();
+    });
+
+    it("increments up to max and sets atMax", () => {
+        const { result, rerender, unmount } = renderHook(() => useBoundedCounter(3, 5));
+        act(() => result.current.increment());
+        rerender();
+        expect(result.current.value).toBe(4);
+
+        act(() => result.current.increment()); rerender();
+        act(() => result.current.increment()); rerender(); // capped
+        expect(result.current.value).toBe(5);
+        expect(result.current.atMax).toBeTruthy();
+        unmount();
+    });
+
+    it("decrement cannot go below zero", () => {
+        const { result, rerender, unmount } = renderHook(() => useBoundedCounter(1));
+        act(() => result.current.decrement()); rerender();
+        act(() => result.current.decrement()); rerender();
+        expect(result.current.value).toBe(0);
+        unmount();
+    });
+
+    it("reset restores the initial value", () => {
+        const { result, rerender, unmount } = renderHook(() => useBoundedCounter(7, 20));
+        act(() => result.current.increment()); rerender();
+        act(() => result.current.increment()); rerender();
+        expect(result.current.value).toBe(9);
+        act(() => result.current.reset()); rerender();
+        expect(result.current.value).toBe(7);
+        unmount();
+    });
+});
+
+// --- REPORT -------------------------------------------------------------
+setTimeout(() => {
+    const root = document.getElementById("tests-root");
+    root.innerHTML = `<div class="title">Test results — custom hook</div>`;
+    let pass = 0, fail = 0;
+    for (const r of __results) {
+        if (r.type === "describe") {
+            const h = document.createElement("div");
+            h.style.cssText = "font-weight:600;color:#0f172a;margin:10px 0 4px";
+            h.textContent = r.name;
+            root.appendChild(h);
+        } else {
+            const row = document.createElement("div");
+            row.className = "result " + (r.type === "pass" ? "pass" : "fail");
+            row.textContent = (r.type === "pass" ? "✔ " : "✖ ") + r.name + (r.err ? " — " + r.err : "");
+            root.appendChild(row);
+            r.type === "pass" ? pass++ : fail++;
+        }
+    }
+    const sum = document.createElement("div");
+    sum.className = "summary";
+    sum.style.color = fail === 0 ? "#065f46" : "#991b1b";
+    sum.textContent = `${pass} passed, ${fail} failed`;
+    root.appendChild(sum);
+    const note = document.createElement("p");
+    note.className = "muted";
+    note.innerHTML = '<code>@testing-library/react</code> ships <code>renderHook</code> + <code>act</code> so you don\'t hand-roll them.';
+    root.appendChild(note);
+}, 50);
+</script>
+</body>
+</html>

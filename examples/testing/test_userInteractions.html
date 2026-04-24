@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Testing — user interactions</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; max-width: 600px; background: #fff; margin-bottom: 10px; }
+        .title { font-size: 13px; font-weight: 600; color: #334155; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
+        button { padding: 6px 12px; border: 1px solid #cbd5e1; background: #f8fafc; border-radius: 6px; cursor: pointer; font: inherit; }
+        .result { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; padding: 6px 10px; border-radius: 6px; margin-top: 4px; }
+        .pass { background: #d1fae5; color: #065f46; }
+        .fail { background: #fee2e2; color: #991b1b; }
+        .summary { font-weight: 700; font-size: 14px; margin-top: 10px; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="component-root" class="card"></div>
+<div id="tests-root"></div>
+
+<script type="text/babel">
+// --- COMPONENT UNDER TEST -----------------------------------------------
+function Counter({ initial = 0 }) {
+    const [n, setN] = React.useState(initial);
+    return (
+        <div>
+            <p data-testid="count">count: {n}</p>
+            <button onClick={() => setN((x) => x + 1)}>+1</button>
+            <button onClick={() => setN(0)}>reset</button>
+        </div>
+    );
+}
+
+ReactDOM.render(
+    <div>
+        <div className="title">Component under test</div>
+        <Counter initial={5} />
+    </div>,
+    document.getElementById("component-root")
+);
+
+// --- TEST HARNESS -------------------------------------------------------
+const __results = [];
+function describe(n, f) { __results.push({ type: "describe", name: n }); f(); }
+function it(n, f) {
+    try {
+        const r = f();
+        if (r && r.then) return r.then(() => __results.push({ type: "pass", name: n }))
+                               .catch((e) => __results.push({ type: "fail", name: n, err: e.message }));
+        __results.push({ type: "pass", name: n });
+    } catch (e) { __results.push({ type: "fail", name: n, err: e.message }); }
+}
+function expect(a) {
+    return {
+        toBe(b) { if (a !== b) throw new Error(`expected ${JSON.stringify(a)} toBe ${JSON.stringify(b)}`); },
+        toContain(s) { const t = a && a.textContent != null ? a.textContent : String(a);
+            if (!t.includes(s)) throw new Error(`expected "${t}" to contain "${s}"`); },
+    };
+}
+function render(el) {
+    const c = document.createElement("div");
+    ReactDOM.render(el, c);
+    return { container: c, unmount: () => ReactDOM.unmountComponentAtNode(c) };
+}
+const getByTestId = (c, id) => c.querySelector(`[data-testid="${id}"]`);
+const getByText   = (c, text) => [...c.querySelectorAll("*")]
+    .find((n) => n.childNodes.length === 1 && n.firstChild.nodeType === 3 && n.textContent.trim() === text);
+
+// fireEvent — wrap in act() so React flushes synchronous updates
+const fireEvent = {
+    click(el) {
+        ReactDOM.unstable_batchedUpdates(() => {
+            el.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        });
+    },
+};
+
+// --- TESTS --------------------------------------------------------------
+describe("<Counter />", () => {
+    it("renders the initial count", () => {
+        const { container, unmount } = render(<Counter initial={0} />);
+        expect(getByTestId(container, "count")).toContain("count: 0");
+        unmount();
+    });
+
+    it("increments when +1 is clicked", () => {
+        const { container, unmount } = render(<Counter initial={0} />);
+        fireEvent.click(getByText(container, "+1"));
+        fireEvent.click(getByText(container, "+1"));
+        fireEvent.click(getByText(container, "+1"));
+        expect(getByTestId(container, "count")).toContain("count: 3");
+        unmount();
+    });
+
+    it("reset button zeroes the count", () => {
+        const { container, unmount } = render(<Counter initial={42} />);
+        fireEvent.click(getByText(container, "reset"));
+        expect(getByTestId(container, "count")).toContain("count: 0");
+        unmount();
+    });
+});
+
+// --- REPORT -------------------------------------------------------------
+setTimeout(() => {
+    const root = document.getElementById("tests-root");
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `<div class="title">Test results</div>`;
+    let pass = 0, fail = 0;
+    for (const r of __results) {
+        if (r.type === "describe") {
+            const h = document.createElement("div");
+            h.style.cssText = "font-weight:600;color:#0f172a;margin:10px 0 4px";
+            h.textContent = r.name;
+            card.appendChild(h);
+        } else {
+            const row = document.createElement("div");
+            row.className = "result " + (r.type === "pass" ? "pass" : "fail");
+            row.textContent = (r.type === "pass" ? "✔ " : "✖ ") + r.name + (r.err ? " — " + r.err : "");
+            card.appendChild(row);
+            r.type === "pass" ? pass++ : fail++;
+        }
+    }
+    const sum = document.createElement("div");
+    sum.className = "summary";
+    sum.style.color = fail === 0 ? "#065f46" : "#991b1b";
+    sum.textContent = `${pass} passed, ${fail} failed`;
+    card.appendChild(sum);
+    const note = document.createElement("p");
+    note.className = "muted";
+    note.innerHTML = 'In a real project: <code>import { render, screen, fireEvent } from "@testing-library/react"</code>. Same ideas, battle-tested implementation.';
+    card.appendChild(note);
+    root.appendChild(card);
+}, 50);
+</script>
+</body>
+</html>

@@ -15,12 +15,17 @@ Built from the original [echristof67/react_js](https://github.com/echristof67/re
 | 5 | Hooks & Data | `useEffect`, `useContext`, custom hooks, `fetch` |
 | 6 | Router & Forms | React Router, controlled forms, validation, multi-step wizard |
 | 7 | Data Patterns | `useReducer`, Context + Reducer store, normalization, selectors, mini CRUD |
+| 8 | Performance | `memo`, `useMemo`, `useCallback`, `lazy` + `Suspense`, virtualization, `useDeferredValue`, `useTransition`, `Profiler` |
+| 9 | Testing | in-browser Vitest/Jest-style harness: `render`, `fireEvent`, `waitFor`, mocking `fetch`, `renderHook`, best practices |
+| 10 | TypeScript | typed props, typed `useState` / `useReducer`, discriminated unions, generic components, typed Context |
 
 ## How it works
 
 - Every example under `examples/**` is a **standalone HTML file** that runs in the browser via a React CDN + `babel-standalone` (no bundling required).
 - `index.html` is a small SPA with hash-based routing — it reads `assets/js/data.js` to build the navigation and renders each example in an iframe next to its syntax-highlighted source.
 - Styling is Tailwind CDN + Prism.js. Both load from public CDNs, so there is no install or build step.
+- Press <kbd>⌘K</kbd> / <kbd>Ctrl+K</kbd> (or <kbd>/</kbd>) anywhere to open a fuzzy command palette that searches every example by title, description, or concept.
+- Each example carries a **difficulty** (beginner / intermediate / advanced) and a rough **minutes** estimate; chapter pages expose a one-click filter to narrow the list.
 
 ## Running locally
 
@@ -76,7 +81,10 @@ react-js-learning/
 │   ├── react-state/           # Chapter 4 — 15 examples
 │   ├── hooks-data/            # Chapter 5 — 11 examples
 │   ├── router-forms/          # Chapter 6 — 10 examples
-│   └── data-patterns/         # Chapter 7 — 9 examples
+│   ├── data-patterns/         # Chapter 7 — 9 examples
+│   ├── performance/           # Chapter 8 — 8 examples
+│   ├── testing/               # Chapter 9 — 7 examples
+│   └── typescript/            # Chapter 10 — 7 examples
 ├── .github/workflows/pages.yml
 ├── .gitignore
 ├── LICENSE

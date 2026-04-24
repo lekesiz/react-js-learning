@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TypeScript — typed Context with safe hook</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; max-width: 560px; background: #fff; margin-bottom: 10px; }
+        button { padding: 6px 12px; border: 1px solid #0369a1; background: #0369a1; color: #fff; border-radius: 6px; cursor: pointer; font: inherit; margin-right: 6px; font-weight: 600; }
+        .pill { display: inline-block; padding: 3px 10px; border-radius: 999px; background: #eff6ff; color: #1e40af; font-size: 13px; margin-right: 4px; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="typescript,react">
+// A typed Context needs 3 pieces:
+//   1. Interface describing the value.
+//   2. createContext<T | null>(null) — null flags "no provider above".
+//   3. Custom hook that narrows null away with a helpful error.
+// The combo gives consumers full autocomplete + a friendly crash if they
+// forget the Provider.
+
+interface User { id: number; name: string; role: "learner" | "teacher" | "admin"; }
+
+interface AuthContextValue {
+    user: User | null;
+    login: (u: User) => void;
+    logout: () => void;
+}
+
+// Declare the variable with an explicit type annotation first, then hand it
+// to createContext. This avoids a parser quirk in babel-standalone where
+// an `as Union | Union` cast inside a function call can fail to parse.
+const initialAuth: AuthContextValue | null = null;
+const AuthContext = React.createContext(initialAuth);
+
+// The custom hook is where safety lives. `useContext(AuthContext)` alone
+// would force every consumer to handle `null`. This wrapper throws clearly.
+function useAuth(): AuthContextValue {
+    const ctx = React.useContext(AuthContext);
+    if (!ctx) throw new Error("useAuth must be used inside <AuthProvider>");
+    return ctx;
+}
+
+function AuthProvider({ children }: { children: React.ReactNode }) {
+    const initialUser: User | null = null;
+    const [user, setUser] = React.useState(initialUser);
+    const value: AuthContextValue = {
+        user,
+        login:  (u: User) => setUser(u),
+        logout: ()        => setUser(null),
+    };
+    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+// ---- Consumers ----------------------------------------------------------
+function UserBadge() {
+    const { user } = useAuth();
+    return user
+        ? <span className="pill">👤 {user.name} ({user.role})</span>
+        : <span className="pill">👤 not signed in</span>;
+}
+
+function LoginPanel() {
+    const { user, login, logout } = useAuth();
+    if (user) {
+        return <button onClick={logout} style={{ background: "#fff", color: "#0369a1" }}>Log out</button>;
+    }
+    return (
+        <div>
+            <button onClick={() => login({ id: 1, name: "Ada",    role: "learner" })}>Log in as Ada</button>
+            <button onClick={() => login({ id: 2, name: "Marc T.", role: "teacher" })}>Log in as Marc</button>
+        </div>
+    );
+}
+
+function App() {
+    return (
+        <AuthProvider>
+            <div className="card">
+                <h1>Typed Context with a safe <code>useAuth</code> hook</h1>
+                <UserBadge />
+                <div style={{ marginTop: 10 }}>
+                    <LoginPanel />
+                </div>
+                <p className="muted">
+                    Using <code>useAuth()</code> outside the provider throws a clear
+                    error during development. Consumers never deal with a possibly-
+                    <code>null</code> context value themselves.
+                </p>
+            </div>
+        </AuthProvider>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

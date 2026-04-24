@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>React.memo — prevent unnecessary re-renders</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; max-width: 560px; background: #fff; margin-bottom: 10px; }
+        button { padding: 8px 14px; border: 1px solid #0369a1; background: #0369a1; color: #fff; border-radius: 6px; cursor: pointer; font: inherit; font-weight: 600; margin-right: 6px; }
+        .tick { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 13px; padding: 6px 10px; border-radius: 6px; background: #fef3c7; color: #92400e; display: inline-block; margin-top: 6px; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// React.memo wraps a component so it skips re-renders when props are
+// shallowly equal. Use it for components that receive stable props but
+// live inside a parent that updates for other reasons.
+
+const { useState, memo, useRef } = React;
+
+function useRenders() {
+    const r = useRef(0);
+    r.current += 1;
+    return r.current;
+}
+
+// Plain version: re-renders whenever parent renders.
+function PlainChild({ name }) {
+    const r = useRenders();
+    return <div className="card"><strong>PlainChild</strong> · name = "{name}" <div className="tick">renders: {r}</div></div>;
+}
+
+// Memoised version: only re-renders when `name` changes.
+const MemoChild = memo(function MemoChild({ name }) {
+    const r = useRenders();
+    return <div className="card" style={{ background: "#ecfdf5" }}><strong>MemoChild</strong> · name = "{name}" <div className="tick" style={{ background: "#d1fae5", color: "#065f46" }}>renders: {r}</div></div>;
+});
+
+function App() {
+    const [tick, setTick] = useState(0);      // causes parent re-renders
+    const [name, setName] = useState("Ada");  // causes prop change
+
+    return (
+        <div>
+            <h1>React.memo — only re-renders when props change</h1>
+            <div className="card">
+                <p>Parent tick: <strong>{tick}</strong></p>
+                <button onClick={() => setTick((t) => t + 1)}>Tick parent (irrelevant to child)</button>
+                <button onClick={() => setName((n) => (n === "Ada" ? "Alan" : "Ada"))}>Rename child</button>
+            </div>
+
+            <PlainChild name={name} />
+            <MemoChild name={name} />
+
+            <p className="muted">
+                Click <em>Tick parent</em>: <code>PlainChild</code> re-renders
+                (gratuitously), <code>MemoChild</code> does not. Only <em>Rename
+                child</em> causes <code>MemoChild</code> to update.
+            </p>
+        </div>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

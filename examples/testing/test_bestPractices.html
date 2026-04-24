@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Testing — best practices cheat sheet</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; line-height: 1.55; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 18px; max-width: 680px; background: #fff; margin-bottom: 10px; }
+        h1 { font-size: 22px; margin: 0 0 12px; }
+        h2 { font-size: 16px; margin: 18px 0 4px; color: #0369a1; }
+        .rule { padding: 10px 14px; border-left: 4px solid #cbd5e1; border-radius: 0 8px 8px 0; background: #f8fafc; margin-top: 8px; }
+        .rule.good { border-left-color: #16a34a; background: #ecfdf5; }
+        .rule.bad { border-left-color: #dc2626; background: #fef2f2; }
+        .rule strong { display: block; margin-bottom: 4px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+        pre { background: #0f172a; color: #a5f3fc; padding: 10px 14px; border-radius: 8px; font-size: 12px; overflow-x: auto; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 12px; }
+    </style>
+</head>
+<body>
+<div class="card">
+
+<h1>Testing React — a short cheat sheet</h1>
+<p className="muted">A compressed summary of what holds up in real codebases. These aren't laws — treat them as defaults you bend with reason.</p>
+
+<h2>What to test</h2>
+<div className="rule good"><strong>Test behaviour, not implementation</strong>
+"When the user clicks <em>Save</em>, the handler receives the form values." Not "setState was called with X."</div>
+<div className="rule good"><strong>Test at the component boundary</strong>
+Render the component, drive it with public props + user events, assert on the DOM output. You can refactor internals freely.</div>
+<div className="rule good"><strong>Cover the three branches of async</strong>
+Loading, success, error. Each is a separate test case.</div>
+
+<h2>What NOT to test</h2>
+<div className="rule bad"><strong>Don't assert on CSS class names</strong>
+Brittle and low-signal. Prefer <code>data-testid</code>, <code>aria-*</code>, or visible text.</div>
+<div className="rule bad"><strong>Don't test library internals</strong>
+No need to verify that <code>useState</code> stores values. Test <em>your</em> component.</div>
+<div className="rule bad"><strong>Don't rely on sleeps</strong>
+Use <code>waitFor</code>, <code>findBy*</code>. Arbitrary <code>setTimeout</code> waits flake under load.</div>
+
+<h2>Query priority (Testing Library)</h2>
+<pre>1. getByRole("button", { name: /save/i })   // most accessible
+2. getByLabelText("Email")                   // for form inputs
+3. getByText("Welcome")                      // for visible text
+4. getByTestId("confirmation")               // last resort</pre>
+
+<h2>Pattern: Arrange · Act · Assert</h2>
+<pre>it("saves the form", () => {
+  // Arrange
+  const onSave = vi.fn();
+  render(&lt;Form onSubmit={onSave} /&gt;);
+
+  // Act
+  fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Ada" } });
+  fireEvent.click(screen.getByRole("button", { name: /save/i }));
+
+  // Assert
+  expect(onSave).toHaveBeenCalledWith({ name: "Ada" });
+});</pre>
+
+<h2>Mocking</h2>
+<div className="rule good"><strong>Prefer <em>faking</em> over deep mocking</strong>
+A small in-memory fake of your API keeps tests readable. <code>vi.mock("./api")</code> is fine but drifts from real behaviour over time.</div>
+<div className="rule good"><strong>Stub at the network boundary when possible</strong>
+Tools like <code>msw</code> intercept <code>fetch</code> and let your component code run untouched — tests match production closely.</div>
+
+<h2>Speed</h2>
+<div className="rule"><strong>Unit tests: &lt; 100 ms each</strong>
+A thousand of them finish in under a minute. Any slower and people stop running the suite locally.</div>
+
+<p className="muted">This page is static — it's a recap. The other five Chapter 9 examples show each pattern running in the browser.</p>
+</div>
+</body>
+</html>

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Virtualization — render only what's visible</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; color: #1f2937; }
+        h1 { font-size: 20px; margin: 0 0 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; max-width: 560px; background: #fff; }
+        .window { border: 1px solid #cbd5e1; border-radius: 8px; height: 320px; overflow-y: auto; position: relative; background: #fafafa; margin-top: 10px; }
+        .row { position: absolute; left: 0; right: 0; padding: 0 12px; display: flex; align-items: center; border-bottom: 1px solid #eef2f7; font-size: 14px; background: #fff; }
+        .row:nth-child(even) { background: #f8fafc; }
+        .stat { display: flex; gap: 14px; font-size: 13px; color: #64748b; margin-top: 6px; }
+        .stat strong { color: #0369a1; font-family: 'JetBrains Mono', ui-monospace, monospace; }
+        .muted { color: #64748b; font-size: 13px; margin-top: 10px; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// Windowing / virtualization: instead of rendering all 10_000 rows, render
+// only the ones inside the scroll viewport + a small overscan. In production
+// reach for `react-window` or `react-virtual`; here it's the idea in 20 lines.
+
+const { useState, useRef, useEffect } = React;
+
+const TOTAL   = 10_000;
+const ITEM_H  = 32;
+const WINDOW  = 320;
+const OVERSCAN = 4;
+
+const DATA = Array.from({ length: TOTAL }, (_, i) => ({
+    id: i + 1, name: "Item #" + (i + 1),
+}));
+
+function VirtualList() {
+    const containerRef = useRef(null);
+    const [scrollTop, setScrollTop] = useState(0);
+
+    useEffect(() => {
+        const el = containerRef.current;
+        const onScroll = () => setScrollTop(el.scrollTop);
+        el.addEventListener("scroll", onScroll, { passive: true });
+        return () => el.removeEventListener("scroll", onScroll);
+    }, []);
+
+    const firstVisible = Math.max(0, Math.floor(scrollTop / ITEM_H) - OVERSCAN);
+    const lastVisible  = Math.min(TOTAL, Math.ceil((scrollTop + WINDOW) / ITEM_H) + OVERSCAN);
+    const items = DATA.slice(firstVisible, lastVisible);
+
+    return (
+        <div>
+            <div className="stat">
+                <span>Total rows: <strong>{TOTAL.toLocaleString()}</strong></span>
+                <span>Mounted rows: <strong>{items.length}</strong></span>
+                <span>Visible range: <strong>{firstVisible}–{lastVisible}</strong></span>
+            </div>
+
+            <div className="window" ref={containerRef}>
+                {/* Spacer to give the inner "scroll area" the true total height */}
+                <div style={{ height: TOTAL * ITEM_H, position: "relative" }}>
+                    {items.map((item, i) => (
+                        <div key={item.id} className="row"
+                             style={{ top: (firstVisible + i) * ITEM_H, height: ITEM_H }}>
+                            {item.name}
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function App() {
+    return (
+        <div className="card">
+            <h1>Virtualization — render a sliver of 10 000 rows</h1>
+            <VirtualList />
+            <p className="muted">
+                Scroll fast — only ~{Math.round(WINDOW / 32) + 2 * 4} rows exist in
+                the DOM at any moment. A naive <code>data.map(...)</code> would
+                mount 10 000 <code>&lt;div&gt;</code>s.
+            </p>
+        </div>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>
